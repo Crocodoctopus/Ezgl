@@ -306,7 +306,7 @@ impl DrawEngine {
 		UniformHandle::new(uniform_handle)
 	}
 
-	pub fn set_uniform<T: 'static>(&mut self, handle: UniformHandle<T>, t: T) where T: GLSLType {
+	pub fn set_uniform<T: 'static>(&mut self, handle: &UniformHandle<T>, t: T) where T: GLSLType {
 		// get the index of the uniform
 		let index = match self.draw_envs.iter().position(|&(_, h, _, _)| h == handle.get_id()) {
 			Some(index) => index,
