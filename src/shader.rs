@@ -17,6 +17,8 @@ pub enum ShaderError {
 	// Does not contained the specified uniform name
 	NonexistentUniform,
 	//
+	NonexistentAttrib,
+	//
 	ShaderBuildFailure,
 	//
 	ProgramLinkFailure,
@@ -36,6 +38,38 @@ impl Shader {
 			shader_codes: Vec::new(),
 			shader_types: Vec::new(),
 			shader_resources: Vec::new(),
+		}
+	}
+
+	pub fn get_attrib_id(&self, name: &'static str) -> Result<GLint, ShaderError> {
+		match self.program_resource {
+			Some(ref res) => {
+				unsafe {
+					let loc = gl::GetAttribLocation(res.get_handle(), name.as_ptr() as *const _ as _);
+					if loc == -1 {
+						return Err(ShaderError::NonexistentAttrib);
+					} else {
+						return Ok(loc);
+					}
+				}
+			},
+			None => return Err(ShaderError::InvalidProgram),
+		}
+	}
+
+	pub fn get_uniform_id(&self, name: &'static str) -> Result<GLint, ShaderError> {
+		match self.program_resource {
+			Some(ref res) => {
+				unsafe {
+					let loc = gl::GetUniformLocation(res.get_handle(), name.as_ptr() as *const _ as _);
+					if loc == -1 {
+						return Err(ShaderError::NonexistentUniform);
+					} else {
+						return Ok(loc);
+					}
+				}
+			},
+			None => return Err(ShaderError::InvalidProgram),
 		}
 	}
 
