@@ -21,16 +21,12 @@ pub struct DrawEnv {
 	pub(super) shader: usize,
 	pub(super) indices: usize,
 	pub(super) buffers: Vec<(usize, GLuint)>,
+	pub(super) textures: Vec<(usize, GLint)>,
+	pub(super) uniforms: Vec<(GLSLAny, GLint)>,
 
 	// optional stuff
 	pub(super) depth: EnableDepth,
 	pub(super) blend: EnableBlend,
-
-	// textures
-	pub(super) textures: Vec<(usize, GLint)>,
-
-	// uniforms
-	pub(super) uniforms: Vec<(GLSLAny, GLint)>,
 }
 
 impl DrawEnv {
@@ -42,14 +38,32 @@ impl DrawEnv {
 			shader: usize::max_value(),
 			indices: usize::max_value(),
 			buffers: Vec::new(),
+			textures: Vec::new(),
+			uniforms: Vec::new(),
 
 			depth: EnableDepth::No,
 			blend: EnableBlend::No,
-
-			textures: Vec::new(),
-
-			uniforms: Vec::new(),
 		}
+	}
+
+	pub fn debug_print(&self) {
+		println!("Printing DrawEnv:");
+		println!("count: {}, offset: {}", self.count, self.offset);
+		println!("shader: {}", self.shader);
+		println!("ibo: {}", self.indices);
+		println!("Buffers:");
+		self.buffers.iter().for_each(|&(h, b)| {
+			println!("  {}, target {}", h, b);
+		});
+		println!("Textures:");
+		self.textures.iter().for_each(|&(h, b)| {
+			println!("  {}, target {}", h, b);
+		});
+		println!("Uniforms:");
+		self.uniforms.iter().for_each(|&(ref a, b)| {
+			println!("  {:?}, target {}", a, b);
+		});
+		println!("End print");
 	}
 
 	pub fn set_draw_count(&mut self, count: usize, offset: usize) {
