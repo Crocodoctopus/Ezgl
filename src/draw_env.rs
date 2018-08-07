@@ -99,20 +99,20 @@ impl DrawEnv {
 
 	pub fn add_texture(&mut self, texture_handle: &TextureHandle, attrib_loc: GLuint) {
 		// push only if the handle isn't already there
-		if !self.buffers.iter().any(|&(h, _)| h == texture_handle.get_id()) {
-			self.buffers.push((texture_handle.get_id(), attrib_loc));
+		if !self.textures.iter().any(|&(h, _)| h == texture_handle.get_id()) {
+			self.textures.push((texture_handle.get_id(), attrib_loc));
 		}
 	}
 
 	pub fn remove_texture(&mut self, texture_handle: &TextureHandle) {
 		// find the index (or return)
-		let index = match self.buffers.iter().position(|&(h, _)| h == texture_handle.get_id()) {
+		let index = match self.textures.iter().position(|&(h, _)| h == texture_handle.get_id()) {
 			Some(index) => index,
 			None => return,
 		};
 		
 		// remove at said index
-		self.buffers.swap_remove(index);
+		self.textures.swap_remove(index);
 	}
 
 	pub fn set_uniform(&mut self, loc: GLint, data: GLSLAny) {
