@@ -42,6 +42,7 @@ impl Texture2D {
 
         // upload the data
         unsafe {
+            gl::BindTexture(gl::TEXTURE_2D, self.resource.get_handle());
             gl::TexImage2D(
                 gl::TEXTURE_2D,
                 0,
@@ -88,6 +89,7 @@ impl Texture2D {
 
         // blit
         unsafe {
+            gl::BindTexture(gl::TEXTURE_2D, self.resource.get_handle());
             gl::TexSubImage2D(
                 gl::TEXTURE_2D,
                 0,

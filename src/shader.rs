@@ -41,7 +41,7 @@ impl Shader {
 		}
 	}
 
-	pub fn get_attrib_id(&self, name: &'static str) -> Result<GLint, ShaderError> {
+	pub fn get_attrib_loc(&self, name: &'static str) -> Result<GLint, ShaderError> {
 		match self.program_resource {
 			Some(ref res) => {
 				unsafe {
@@ -57,7 +57,7 @@ impl Shader {
 		}
 	}
 
-	pub fn get_uniform_id(&self, name: &'static str) -> Result<GLint, ShaderError> {
+	pub fn get_uniform_loc(&self, name: &'static str) -> Result<GLint, ShaderError> {
 		match self.program_resource {
 			Some(ref res) => {
 				unsafe {

@@ -227,12 +227,6 @@ impl DrawEngine {
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
 
-		let mut vao = 0;
-		unsafe {
-			gl::GenVertexArrays(1, &mut vao as _);
-			gl::BindVertexArray(vao);
-		}
-
 		self.draw_envs.iter().for_each(|&(_, _, ref env, line)| {
 			// get the program and activate it
 			let program_index = self.shader_handles.iter().position(|&handle| handle == env.shader).expect(format!("Program not bound to this draw env ({})", line).as_str());
@@ -273,9 +267,9 @@ impl DrawEngine {
 
 				// uniform magic aaaay
 				unsafe {
+					gl::Uniform1i(loc, texture_target as _);
 					gl::ActiveTexture(gl::TEXTURE0 + texture_target);
             		gl::BindTexture(gl::TEXTURE_2D, texture.resource.get_handle());
-            		gl::Uniform1i(loc, texture_target as _);
 				}
 
 				// increment the texture_target handle
@@ -358,7 +352,6 @@ impl DrawEngine {
 		});
 
 		unsafe {
-			gl::DeleteVertexArrays(1, &mut vao as _);
 			assert!(gl::GetError() == gl::NO_ERROR);
 		}
 	}
