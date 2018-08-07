@@ -16,6 +16,8 @@ pub(super) enum EnableBlend {
 // :)
 pub struct DrawEnv {
 	// core stuff
+	pub(super) count: usize,
+	pub(super) offset: usize,
 	pub(super) shader: usize,
 	pub(super) indices: usize,
 	pub(super) buffers: Vec<(usize, GLuint)>,
@@ -34,6 +36,9 @@ pub struct DrawEnv {
 impl DrawEnv {
 	pub(super) fn new() -> Self {
 		Self {
+			count: 0,
+			offset: 0,
+
 			shader: usize::max_value(),
 			indices: usize::max_value(),
 			buffers: Vec::new(),
@@ -45,6 +50,11 @@ impl DrawEnv {
 
 			uniforms: Vec::new(),
 		}
+	}
+
+	pub fn set_draw_count(&mut self, count: usize, offset: usize) {
+		self.count = count;
+		self.offset = offset;
 	}
 
 	pub fn add_shader(&mut self, shader_handle: &ShaderHandle) {

@@ -214,7 +214,7 @@ impl DrawEngine {
 		self.draw_envs.swap_remove(index);
 	}
 
-	pub fn get_draw_env<F, R>(&mut self, draw_env_handle: &DrawEnvHandle, func: F) -> R where F: Fn(&mut DrawEnv) -> R {
+	pub fn get_draw_env_mut<F, R>(&mut self, draw_env_handle: &DrawEnvHandle, func: F) -> R where F: Fn(&mut DrawEnv) -> R {
 		// get the index of the handle
 		let index = self.draw_envs.iter().position(|&(_, h, _, _)| h == draw_env_handle.get_id()).expect("Unreachable");
 
@@ -222,7 +222,7 @@ impl DrawEngine {
 	}
 
 	// THE BIG DRAW
-	pub fn draw(&self, count: GLint, offset: GLint) {
+	pub fn draw(&self) {
     	unsafe {
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
@@ -351,9 +351,9 @@ impl DrawEngine {
 			unsafe {
 				gl::DrawElements(
 					gl::TRIANGLES,
-					(count * 3) as _,
+					(env.count * 3) as _,
 					indices.glsl_type,
-					offset as _);
+					(env.offset * 3) as _);
 			}
 		});
 
