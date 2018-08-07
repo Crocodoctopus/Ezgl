@@ -97,7 +97,7 @@ impl DrawEnv {
 		self.buffers.swap_remove(index);
 	}
 
-	pub fn add_texture(&mut self, texture_handle: &TextureHandle, attrib_loc: GLuint) {
+	pub fn add_texture(&mut self, texture_handle: &TextureHandle, attrib_loc: GLint) {
 		// push only if the handle isn't already there
 		if !self.textures.iter().any(|&(h, _)| h == texture_handle.get_id()) {
 			self.textures.push((texture_handle.get_id(), attrib_loc));
