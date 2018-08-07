@@ -42,13 +42,13 @@ pub trait GLSLType {
 pub struct Bool(pub GLboolean);
 #[repr(C)]
 #[derive(Copy, Clone)]
-pub struct Bvec2(pub GLboolean, pub GLboolean);
+pub struct Bvec2(pub [GLboolean; 2]);
 #[repr(C)]
 #[derive(Copy, Clone)]
-pub struct Bvec3(pub GLboolean, pub GLboolean, pub GLboolean);
+pub struct Bvec3(pub [GLboolean; 3]);
 #[repr(C)]
 #[derive(Copy, Clone)]
-pub struct Bvec4(pub GLboolean, pub GLboolean, pub GLboolean, pub GLboolean);
+pub struct Bvec4(pub [GLboolean; 4]);
 
 // int
 #[repr(C)]
@@ -56,13 +56,13 @@ pub struct Bvec4(pub GLboolean, pub GLboolean, pub GLboolean, pub GLboolean);
 pub struct Int(pub GLint);
 #[repr(C)]
 #[derive(Copy, Clone)]
-pub struct Ivec2(pub GLint, pub GLint);
+pub struct Ivec2(pub [GLint; 2]);
 #[repr(C)]
 #[derive(Copy, Clone)]
-pub struct Ivec3(pub GLint, pub GLint, pub GLint);
+pub struct Ivec3(pub [GLint; 3]);
 #[repr(C)]
 #[derive(Copy, Clone)]
-pub struct Ivec4(pub GLint, pub GLint, pub GLint, pub GLint);
+pub struct Ivec4(pub [GLint; 4]);
 
 // uint
 #[repr(C)]
@@ -70,13 +70,12 @@ pub struct Ivec4(pub GLint, pub GLint, pub GLint, pub GLint);
 pub struct Uint(pub GLuint);
 #[repr(C)]
 #[derive(Copy, Clone)]
-pub struct Uvec2(pub GLuint, pub GLuint);
+pub struct Uvec2(pub [GLuint; 2]);
+pub type Uvec3 = [GLuint; 3];
+//pub struct Uvec3(pub [GLuint; 3]);
 #[repr(C)]
 #[derive(Copy, Clone)]
-pub struct Uvec3(pub GLuint, pub GLuint, pub GLuint);
-#[repr(C)]
-#[derive(Copy, Clone)]
-pub struct Uvec4(pub GLuint, pub GLuint, pub GLuint, pub GLuint);
+pub struct Uvec4(pub [GLuint; 4]);
 
 // float
 #[repr(C)]
@@ -84,13 +83,13 @@ pub struct Uvec4(pub GLuint, pub GLuint, pub GLuint, pub GLuint);
 pub struct Float(pub GLfloat);
 #[repr(C)]
 #[derive(Copy, Clone)]
-pub struct Vec2(pub GLfloat, pub GLfloat);
+pub struct Vec2(pub [GLfloat; 2]);
 #[repr(C)]
 #[derive(Copy, Clone)]
-pub struct Vec3(pub GLfloat, pub GLfloat, pub GLfloat);
+pub struct Vec3(pub [GLfloat; 3]);
 #[repr(C)]
 #[derive(Copy, Clone)]
-pub struct Vec4(pub GLfloat, pub GLfloat, pub GLfloat, pub GLfloat);
+pub struct Vec4(pub [GLfloat; 4]);
 
 // double
 #[repr(C)]
@@ -98,79 +97,79 @@ pub struct Vec4(pub GLfloat, pub GLfloat, pub GLfloat, pub GLfloat);
 pub struct Double(pub GLdouble);
 #[repr(C)]
 #[derive(Copy, Clone)]
-pub struct Dvec2(pub GLdouble, pub GLdouble);
+pub struct Dvec2(pub [GLdouble; 2]);
 #[repr(C)]
 #[derive(Copy, Clone)]
-pub struct Dvec3(pub GLdouble, pub GLdouble, pub GLdouble);
+pub struct Dvec3(pub [GLdouble; 3]);
 #[repr(C)]
 #[derive(Copy, Clone)]
-pub struct Dvec4(pub GLdouble, pub GLdouble, pub GLdouble, pub GLdouble);
+pub struct Dvec4(pub [GLdouble; 4]);
 
 // float mat
 #[repr(C)]
 #[derive(Copy, Clone)]
-pub struct Mat2(pub GLfloat, pub GLfloat, pub GLfloat, pub GLfloat);
+pub struct Mat2(pub [GLfloat; 4]);
 #[repr(C)]
 #[derive(Copy, Clone)]
-pub struct Mat2x3(pub GLfloat, pub GLfloat, pub GLfloat, pub GLfloat, pub GLfloat, pub GLfloat);
+pub struct Mat2x3(pub [GLfloat; 6]);
 #[repr(C)]
 #[derive(Copy, Clone)]
-pub struct Mat2x4(pub GLfloat, pub GLfloat, pub GLfloat, pub GLfloat, pub GLfloat, pub GLfloat, pub GLfloat, pub GLfloat);
+pub struct Mat2x4(pub [GLfloat; 8]);
 #[repr(C)]
 #[derive(Copy, Clone)]
-pub struct Mat3x2(pub GLfloat, pub GLfloat, pub GLfloat, pub GLfloat, pub GLfloat, pub GLfloat);
+pub struct Mat3x2(pub [GLfloat; 6]);
 #[repr(C)]
 #[derive(Copy, Clone)]
-pub struct Mat3(pub GLfloat, pub GLfloat, pub GLfloat, pub GLfloat, pub GLfloat, pub GLfloat, pub GLfloat, pub GLfloat, pub GLfloat);
+pub struct Mat3(pub [GLfloat; 9]);
 #[repr(C)]
 #[derive(Copy, Clone)]
-pub struct Mat3x4(pub GLfloat, pub GLfloat, pub GLfloat, pub GLfloat, pub GLfloat, pub GLfloat, pub GLfloat, pub GLfloat, pub GLfloat, pub GLfloat, pub GLfloat, pub GLfloat);
+pub struct Mat3x4(pub [GLfloat; 12]);
 #[repr(C)]
 #[derive(Copy, Clone)]
-pub struct Mat4x2(pub GLfloat, pub GLfloat, pub GLfloat, pub GLfloat, pub GLfloat, pub GLfloat, pub GLfloat, pub GLfloat);
+pub struct Mat4x2(pub [GLfloat; 8]);
 #[repr(C)]
 #[derive(Copy, Clone)]
-pub struct Mat4x3(pub GLfloat, pub GLfloat, pub GLfloat, pub GLfloat, pub GLfloat, pub GLfloat, pub GLfloat, pub GLfloat, pub GLfloat, pub GLfloat, pub GLfloat, pub GLfloat);
+pub struct Mat4x3(pub [GLfloat; 12]);
 #[repr(C)]
 #[derive(Copy, Clone)]
-pub struct Mat4(pub GLfloat, pub GLfloat, pub GLfloat, pub GLfloat, pub GLfloat, pub GLfloat, pub GLfloat, pub GLfloat, pub GLfloat, pub GLfloat, pub GLfloat, pub GLfloat, pub GLfloat, pub GLfloat, pub GLfloat, pub GLfloat);
+pub struct Mat4(pub [GLfloat; 16]);
 
 // double mat
 #[repr(C)]
 #[derive(Copy, Clone)]
-pub struct Dmat2(pub GLdouble, pub GLdouble, pub GLdouble, pub GLdouble);
+pub struct Dmat2(pub [GLdouble; 4]);
 #[repr(C)]
 #[derive(Copy, Clone)]
-pub struct Dmat2x3(pub GLdouble, pub GLdouble, pub GLdouble, pub GLdouble, pub GLdouble, pub GLdouble);
+pub struct Dmat2x3(pub [GLdouble; 6]);
 #[repr(C)]
 #[derive(Copy, Clone)]
-pub struct Dmat2x4(pub GLdouble, pub GLdouble, pub GLdouble, pub GLdouble, pub GLdouble, pub GLdouble, pub GLdouble, pub GLdouble);
+pub struct Dmat2x4(pub [GLdouble; 8]);
 #[repr(C)]
 #[derive(Copy, Clone)]
-pub struct Dmat3x2(pub GLdouble, pub GLdouble, pub GLdouble, pub GLdouble, pub GLdouble, pub GLdouble);
+pub struct Dmat3x2(pub [GLdouble; 6]);
 #[repr(C)]
 #[derive(Copy, Clone)]
-pub struct Dmat3(pub GLdouble, pub GLdouble, pub GLdouble, pub GLdouble, pub GLdouble, pub GLdouble, pub GLdouble, pub GLdouble, pub GLdouble);
+pub struct Dmat3(pub [GLdouble; 9]);
 #[repr(C)]
 #[derive(Copy, Clone)]
-pub struct Dmat3x4(pub GLdouble, pub GLdouble, pub GLdouble, pub GLdouble, pub GLdouble, pub GLdouble, pub GLdouble, pub GLdouble, pub GLdouble, pub GLdouble, pub GLdouble, pub GLdouble);
+pub struct Dmat3x4(pub [GLdouble; 12]);
 #[repr(C)]
 #[derive(Copy, Clone)]
-pub struct Dmat4x2(pub GLdouble, pub GLdouble, pub GLdouble, pub GLdouble, pub GLdouble, pub GLdouble, pub GLdouble, pub GLdouble);
+pub struct Dmat4x2(pub [GLdouble; 8]);
 #[repr(C)]
 #[derive(Copy, Clone)]
-pub struct Dmat4x3(pub GLdouble, pub GLdouble, pub GLdouble, pub GLdouble, pub GLdouble, pub GLdouble, pub GLdouble, pub GLdouble, pub GLdouble, pub GLdouble, pub GLdouble, pub GLdouble);
+pub struct Dmat4x3(pub [GLdouble; 12]);
 #[repr(C)]
 #[derive(Copy, Clone)]
-pub struct Dmat4(pub GLdouble, pub GLdouble, pub GLdouble, pub GLdouble, pub GLdouble, pub GLdouble, pub GLdouble, pub GLdouble, pub GLdouble, pub GLdouble, pub GLdouble, pub GLdouble, pub GLdouble, pub GLdouble, pub GLdouble, pub GLdouble);
+pub struct Dmat4(pub [GLdouble; 16]);
 
 // tris and shorts (element use only)
 #[repr(C)]
 #[derive(Copy, Clone)]
-pub struct ByteTri(pub GLubyte, pub GLubyte, pub GLubyte);
+pub struct ByteTri(pub [GLubyte; 3]);
 #[repr(C)]
 #[derive(Copy, Clone)]
-pub struct ShortTri(pub GLushort, pub GLushort, pub GLushort);
+pub struct ShortTri(pub [GLushort; 3]);
 
 // impls
 impl GLSLType for Bool {
