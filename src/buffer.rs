@@ -3,49 +3,99 @@ use gl::types::*;
 
 use std;
 use super::gl_buffer_resource::*;
+use super::glsl_type::*;
 
-pub struct Buffer<T> {
-	data: Vec<T>,
-	buffer_type: GLenum,
-	buffer_key: usize,
-	resource: Option<GLBufferResource>,
+#[derive(Debug)]
+pub enum BufferError {
+	InvalidBufferType,
+	BufferNotInitialized,
+	InvalidGLSLType
 }
 
-impl<T> Buffer<T> {
-	pub(super) fn new(buffer_type: GLenum, buffer_key: usize) -> Self {
+pub struct Buffer {
+	//data: Vec<T>,
+	pub(super) buffer_type: GLenum,
+	pub(super) glsl_type_count: GLint,
+	pub(super) glsl_type: GLenum,
+	pub(super) resource: GLBufferResource,
+}
+
+impl Buffer {
+	pub(super) fn new<T>() -> Self where T: GLSLType {
 		Self {
-			data: Vec::new(),
-			buffer_type,
-			buffer_key,
-			resource: None,
+			//data: Vec::new(),
+			buffer_type: 0,
+			glsl_type_count: T::get_type().0,
+			glsl_type: T::get_type().1,
+			resource: GLBufferResource::new(),
 		}
 	}
+}
 
-	pub fn init(&mut self, data: Box<[T]>) {
-		// check if we have the resource
-		let resource = self.resource.as_ref().expect("Buffer: Invalid resource!");
+// mutable functions
+pub trait MutableBuffer<T> {
+	fn init(&mut self, GLenum, Box<[T]>) -> Result<(), BufferError>;
+	fn blit(&mut self, usize, &[T]) -> Result<(), BufferError> where T: Copy;
+}
+
+// immutable functions
+/*pub trait ImmutableBuffer<T> {
+	fn get(&self);
+}
+
+impl<T> ImmutableBuffer<T> for MutableBuffer<T> {
+	fn get(&self) {
+		
+	}
+}*/
+
+impl<T> MutableBuffer<T> for Buffer {
+	fn init(&mut self, buffer_type: GLenum, data: Box<[T]>) -> Result<(), BufferError> {
+		// check for vailidity
+		match buffer_type {
+			gl::ARRAY_BUFFER => {
+				match self.glsl_type {
+					gl::UNSIGNED_BYTE | gl::UNSIGNED_SHORT => return Err(BufferError::InvalidGLSLType),
+					_ => { },
+				}
+			},
+			gl::ELEMENT_ARRAY_BUFFER => {
+				match self.glsl_type {
+					gl::UNSIGNED_BYTE | gl::UNSIGNED_SHORT => { },
+					_ => return Err(BufferError::InvalidGLSLType),
+				}
+			},
+			_=> return Err(BufferError::InvalidBufferType),
+		}
 
 		// 
-		self.data = data.into_vec();
+		//self.data = data.into_vec();
 
 		// upload the data
 		unsafe {
-			gl::BindBuffer(self.buffer_type, resource.get_handle());
+			gl::BindBuffer(buffer_type, self.resource.get_handle());
 			gl::BufferData(
-				self.buffer_type, 
-				(self.data.len() * std::mem::size_of::<T>()) as _,
-				self.data.as_ptr() as _,
+				buffer_type, 
+				(data.len() * std::mem::size_of::<T>()) as _,
+				data.as_ptr() as _,
 				gl::STATIC_DRAW);
 		}
+
+		self.buffer_type = buffer_type;
+
+		Ok(())
 	}
 
-	pub fn blit(&mut self, pos: usize, data: &[T]) where T: Copy {
-		// check if we have the resource
-		let resource = self.resource.as_ref().expect("Buffer: Invalid resource!");
+	fn blit(&mut self, pos: usize, data: &[T]) -> Result<(), BufferError> where T: Copy {
+		// check for vailidity
+		match self.buffer_type {
+			0 => return Err(BufferError::BufferNotInitialized),
+			_=> { },
+		}
 
 		// upload the data
 		unsafe {
-			gl::BindBuffer(self.buffer_type, resource.get_handle());
+			gl::BindBuffer(self.buffer_type, self.resource.get_handle());
 			gl::BufferSubData(
 				self.buffer_type,
 				(pos * std::mem::size_of::<T>()) as _,
@@ -53,17 +103,8 @@ impl<T> Buffer<T> {
 				data.as_ptr() as _);
 		}
 
+		Ok(())
 		// copy the data into the buffer's local data
-		self.data.splice(pos .. pos + data.len(), data.into_iter().map(|x| *x));
-	}
-
-	//
-	pub(super) fn get_key(&self) -> usize {
-		self.buffer_key
-	}
-
-	//
-	pub(super) fn get_resource_mut(&mut self) -> &mut Option<GLBufferResource> {
-		&mut self.resource
+		//self.data.splice(pos .. pos + data.len(), data.into_iter().map(|x| *x));
 	}
 }

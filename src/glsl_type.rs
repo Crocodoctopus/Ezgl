@@ -36,11 +36,6 @@ pub trait GLSLType {
 	fn into_glsl_any(self) -> GLSLAny;
 }
 
-// element buffer types
-pub trait ElementType {
-	fn get_type() -> GLenum;
-}
-
 // bool
 #[repr(C)]
 #[derive(Copy, Clone)]
@@ -558,14 +553,22 @@ impl GLSLType for Dmat4 {
 	}
 }
 
-impl ElementType for ByteTri {
-	fn get_type() -> GLenum {
-		gl::UNSIGNED_BYTE
+impl GLSLType for ByteTri {
+	fn get_type() -> (GLint, GLenum) {
+		(-1, gl::UNSIGNED_BYTE)
+	}
+
+	fn into_glsl_any(self) -> GLSLAny {
+		GLSLAny::None
 	}
 }
 
-impl ElementType for ShortTri {
-	fn get_type() -> GLenum {
-		gl::UNSIGNED_SHORT
+impl GLSLType for ShortTri {
+	fn get_type() -> (GLint, GLenum) {
+		(-1, gl::UNSIGNED_SHORT)
+	}
+
+	fn into_glsl_any(self) -> GLSLAny {
+		GLSLAny::None
 	}
 }

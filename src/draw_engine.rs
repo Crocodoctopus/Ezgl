@@ -1,10 +1,7 @@
 use gl;
 use gl::types::*;
-use std::mem::swap;
 use std::ffi::CStr;
 
-use super::buffer_data::*;
-use super::gl_buffer_resource::*;
 use super::buffer::*;
 use super::glsl_type::*;
 use super::shader::*;
@@ -12,38 +9,28 @@ use super::draw_env::*;
 use super::texture::*;
 use super::handles::*;
 
-pub enum DrawEngineError {
-	InvalidHandle,
-}
-
 pub struct DrawEngine {
 	// buffer stuff
 	buffer_counter: usize,
 	buffer_handles: Vec<usize>,
-	buffer_data: Vec<BufferData>,
-	buffer_names: Vec<&'static str>,
+	buffers: Vec<Buffer>,
+	buffer_init_lines: Vec<u32>,
 
 	// shader stuff
 	shader_counter: usize,
 	shader_handles: Vec<usize>,
 	shaders: Vec<Shader>,
-	shader_names: Vec<&'static str>,
+	shader_init_lines: Vec<u32>,
 
 	// texture stuff
 	texture_counter: usize,
 	texture_handles: Vec<usize>,
 	textures: Vec<Texture2D>,
-	texture_names: Vec<&'static str>,
-
-	// uniform stuff
-	uniform_counter: usize,
-	uniform_handles: Vec<usize>,
-	uniform_data: Vec<GLSLAny>,
-	uniform_names: Vec<&'static str>,
+	texture_init_lines: Vec<u32>,
 
 	// draw command stuff
 	draw_env_counter: usize,
-	draw_envs: Vec<(f32, usize, DrawEnv, &'static str)>,
+	draw_envs: Vec<(f32, usize, DrawEnv, u32)>,
 }
 
 extern "system" fn callback(source: GLenum, gltype: GLenum, id: GLuint, severity: GLenum, _length: GLsizei, message: *const GLchar, _: *mut GLvoid) {
@@ -61,23 +48,18 @@ impl DrawEngine {
 		Self {
 			buffer_counter: 0,
 			buffer_handles: Vec::new(),
-			buffer_data: Vec::new(),
-			buffer_names: Vec::new(),
+			buffers: Vec::new(),
+			buffer_init_lines: Vec::new(),
 
 			shader_counter: 0,
 			shader_handles: Vec::new(),
 			shaders: Vec::new(),
-			shader_names: Vec::new(),
+			shader_init_lines: Vec::new(),
 
 			texture_counter: 0,
 			texture_handles: Vec::new(),
 			textures: Vec::new(),
-			texture_names: Vec::new(),
-
-			uniform_counter: 0,
-			uniform_handles: Vec::new(),
-			uniform_data: Vec::new(),
-			uniform_names: Vec::new(),
+			texture_init_lines: Vec::new(),
 
 			draw_env_counter: 0,
 			draw_envs: Vec::new(),
@@ -92,84 +74,52 @@ impl DrawEngine {
 	}
 
 	// Creates a new buffer with nothing in it
-	pub fn create_buffer<T>(&mut self, buffer_type: GLenum, name: &'static str) -> Buffer<T> where T: GLSLType {
-		// do some quick support checks
-		match buffer_type {
-			gl::ARRAY_BUFFER => { },
-			gl::ELEMENT_ARRAY_BUFFER => panic!("Use create_element_buffer instead!"),
-			_ => panic!("This buffer type is not supported"),
-		}
-
+	pub fn create_buffer<T>(&mut self, line: u32) -> BufferHandle<T> where T: GLSLType {
 		// get a unique handle from the buffer counter
 		let buffer_handle = self.buffer_counter;
 		self.buffer_counter += 1;
 
-		// create a buffer resource
-		let gl_buffer_resource = GLBufferResource::new();
-
-		// create the buffer data
-		let buffer_data = BufferData {
-			buffer_type,
-			glsl_type_count: T::get_type().0,
-			glsl_type: T::get_type().1,
-			resource: Some(gl_buffer_resource),
-		};
+		// create the buffer
+		let buffer = Buffer::new::<T>();
 
 		// push
 		self.buffer_handles.push(buffer_handle);
-		self.buffer_data.push(buffer_data);
-		self.buffer_names.push(name);
+		self.buffers.push(buffer);
+		self.buffer_init_lines.push(line);
 
 		// create and return the buffer
-		Buffer::<T>::new(buffer_type, buffer_handle)
-	}
-
-	pub fn create_element_buffer<T>(&mut self, name: &'static str) -> Buffer<T> where T: ElementType {
-		// get a unique handle from the buffer counter
-		let buffer_handle = self.buffer_counter;
-		self.buffer_counter += 1;
-
-		// create a buffer resource
-		let gl_buffer_resource = GLBufferResource::new();
-
-		// create the buffer data
-		let buffer_data = BufferData {
-			buffer_type: gl::ELEMENT_ARRAY_BUFFER,
-			glsl_type_count: 0,
-			glsl_type: T::get_type(),
-			resource: Some(gl_buffer_resource),
-		};
-
-		// push
-		self.buffer_handles.push(buffer_handle);
-		self.buffer_data.push(buffer_data);
-		self.buffer_names.push(name);
-
-		// create and return the buffer
-		Buffer::<T>::new(gl::ELEMENT_ARRAY_BUFFER, buffer_handle)
+		BufferHandle::<T>::new(buffer_handle)
 	}
 
 	// Frees a buffer
-	pub fn free_buffer<T>(&mut self, buffer: Buffer<T>) {
+	pub fn free_buffer<T>(&mut self, buffer_handle: BufferHandle<T>) {
 		// get the index of the handle
-		let index = self.buffer_handles.iter().position(|&handle| handle == buffer.get_key()).expect("I'm not sure how this can happen");	
+		let index = self.buffer_handles.iter().position(|&handle| handle == buffer_handle.get_id()).expect("Unreachable");	
 
 		// remove
 		self.buffer_handles.swap_remove(index);
-		self.buffer_data.swap_remove(index);
-		self.buffer_names.swap_remove(index);
+		self.buffers.swap_remove(index);
+		self.buffer_init_lines.swap_remove(index);
 	}
 
-	// Swaps the important buffer resource
-	pub fn buffer_swap<T>(&mut self, buffer: &mut Buffer<T>) {
+	pub fn get_buffer_mut<T, F, R>(&mut self, buffer_handle: &BufferHandle<T>, func: F) -> R where F: Fn(&mut MutableBuffer<T>) -> R {
 		// get the index of the handle
-		let index = self.buffer_handles.iter().position(|&handle| handle == buffer.get_key()).expect("I'm not sure how this can happen");
+		let index = self.buffer_handles.iter().position(|&handle| handle == buffer_handle.get_id()).expect("Unreachable");
 
-		// Swap the resources
-		swap(buffer.get_resource_mut(), &mut self.buffer_data[index].resource);
+		func(&mut self.buffers[index])
 	}
 
-	pub fn create_shader(&mut self, name: &'static str) -> ShaderHandle {
+	/*pub fn get_buffer<T, F, R>(&self, buffer_handle: BufferHandle<T>, func: F) -> R where F: Fn(&ImmutableBuffer<T>) -> R {
+		// get the index of the handle
+		let index = self.buffer_handles.iter().position(|&handle| handle == buffer_handle.get_id()).expect("Unreachable");
+
+		//func(&self.buffers[index])
+
+		let b = &mut self.buffers[index] as &mut MutableBuffer<T>;
+		let c = b as &ImmutableBuffer<T>;
+	}*/
+
+	pub fn create_shader(&mut self, line: u32) -> ShaderHandle {
 		// get a unique handle from the shader counter
 		let shader_handle = self.shader_counter;
 		self.shader_counter += 1;
@@ -180,35 +130,30 @@ impl DrawEngine {
 		// insert the shader
 		self.shader_handles.push(shader_handle);
 		self.shaders.push(shader);
-		self.shader_names.push(name);
+		self.shader_init_lines.push(line);
 
 		// return the handle
 		ShaderHandle::new(shader_handle)
 	}
 
-	pub fn free_shader(&mut self, shader_handle: ShaderHandle) -> Result<(), DrawEngineError> {
+	pub fn free_shader(&mut self, shader_handle: ShaderHandle) {
 		// get the index of the handle
-		let index = match self.shader_handles.iter().position(|&handle| handle == shader_handle.get_id()) {
-			Some(index) => index,
-			None => return Err(DrawEngineError::InvalidHandle),
-		};
+		let index = self.shader_handles.iter().position(|&handle| handle == shader_handle.get_id()).expect("Unreachable");
 
 		// remove
 		self.shader_handles.swap_remove(index);
 		self.shaders.swap_remove(index);
-		self.shader_names.swap_remove(index);
-
-		Ok(())
+		self.shader_init_lines.swap_remove(index);
 	}
 
-	pub fn get_shader(&mut self, shader_handle: &ShaderHandle) -> Option<&mut Shader> {
-		match self.shader_handles.iter().position(|&handle| handle == shader_handle.get_id()) {
-			Some(index) => Some(&mut self.shaders[index]),
-			None => None,
-		}
+	pub fn get_shader_mut<F, R>(&mut self, shader_handle: &ShaderHandle, func: F) -> R where F: Fn(&mut Shader) -> R {
+		// get the index of the handle
+		let index = self.shader_handles.iter().position(|&handle| handle == shader_handle.get_id()).expect("Unreachable");
+
+		func(&mut self.shaders[index])
 	}
 
-	pub fn create_texture(&mut self, name: &'static str) -> TextureHandle {
+	pub fn create_texture(&mut self, line: u32) -> TextureHandle {
 		// get a unique handle from the texture counter
 		let texture_handle = self.texture_counter;
 		self.texture_counter += 1;
@@ -219,35 +164,30 @@ impl DrawEngine {
 		// insert the texture
 		self.texture_handles.push(texture_handle);
 		self.textures.push(texture);
-		self.texture_names.push(name);
+		self.texture_init_lines.push(line);
 
 		// return the handle
 		TextureHandle::new(texture_handle)
 	}
 
-	pub fn free_texture(&mut self, texture_handle: TextureHandle) -> Result<(), DrawEngineError> {
+	pub fn free_texture(&mut self, texture_handle: TextureHandle) {
 		// get the index of the handle
-		let index = match self.texture_handles.iter().position(|&handle| handle == texture_handle.get_id()) {
-			Some(index) => index,
-			None => return Err(DrawEngineError::InvalidHandle),
-		};
+		let index = self.texture_handles.iter().position(|&handle| handle == texture_handle.get_id()).expect("Unreachable");
 
 		// remove
 		self.texture_handles.swap_remove(index);
 		self.textures.swap_remove(index);
-		self.texture_names.swap_remove(index);
-
-		Ok(())
+		self.texture_init_lines.swap_remove(index);
 	}
 
-	pub fn get_texture(&mut self, texture_handle: &TextureHandle) -> Option<&mut Texture2D> {
-		match self.texture_handles.iter().position(|&handle| handle == texture_handle.get_id()) {
-			Some(index) => Some(&mut self.textures[index]),
-			None => None,
-		}
+	pub fn get_texture_mut<F, R>(&mut self, texture_handle: &TextureHandle, func: F) -> R where F: Fn(&mut Texture2D) -> R {
+		// get the index of the handle
+		let index = self.texture_handles.iter().position(|&handle| handle == texture_handle.get_id()).expect("Unreachable");
+
+		func(&mut self.textures[index])
 	}
 
-	pub fn create_draw_env(&mut self, depth: f32, name: &'static str) -> usize {
+	pub fn create_draw_env(&mut self, depth: f32, line: u32) -> DrawEnvHandle {
 		// get a unique handle from the draw env counter
 		let draw_env_handle = self.draw_env_counter;
 		self.draw_env_counter += 1;
@@ -260,74 +200,25 @@ impl DrawEngine {
 			Some(index) => index,
 			None => self.draw_envs.len(),
 		};
-		self.draw_envs.insert(index, (depth, draw_env_handle, draw_env, name));
+		self.draw_envs.insert(index, (depth, draw_env_handle, draw_env, line));
 
 		// return the handle
-		draw_env_handle
+		DrawEnvHandle::new(draw_env_handle)
 	}
 
-	pub fn free_draw_env(&mut self, draw_env_handle: usize) -> Result<(), DrawEngineError> {
+	pub fn free_draw_env(&mut self, draw_env_handle: &DrawEnvHandle) {
 		// get the index of the handle
-		let index = match self.draw_envs.iter().position(|&(_, h, _, _)| h == draw_env_handle) {
-			Some(index) => index,
-			None => return Err(DrawEngineError::InvalidHandle),
-		};
+		let index = self.draw_envs.iter().position(|&(_, h, _, _)| h == draw_env_handle.get_id()).expect("Unreachable");
 
 		// remove
 		self.draw_envs.swap_remove(index);
-
-		Ok(())
 	}
 
-	pub fn get_draw_env(&mut self, draw_env_handle: usize) -> Option<&mut DrawEnv> {
-		match self.draw_envs.iter().position(|&(_, h, _, _)| h == draw_env_handle) {
-			Some(index) => Some(&mut self.draw_envs[index].2),
-			None => None,
-		}
-	}
+	pub fn get_draw_env<F, R>(&mut self, draw_env_handle: &DrawEnvHandle, func: F) -> R where F: Fn(&mut DrawEnv) -> R {
+		// get the index of the handle
+		let index = self.draw_envs.iter().position(|&(_, h, _, _)| h == draw_env_handle.get_id()).expect("Unreachable");
 
-	pub fn create_uniform<T>(&mut self, t: T, name: &'static str) -> UniformHandle<T> where T: GLSLType {
-		// check if this value of t is supported, and extract the "any"
-		let data = match t.into_glsl_any() {
-			GLSLAny::None => panic!("Opengl does not support this kind of uniform"),
-			a => a,
-		};
-
-		// get a unique handle from the uniform counter
-		let uniform_handle = self.uniform_counter;
-		self.uniform_counter += 1;
-
-		// insert
-		self.uniform_handles.push(uniform_handle);
-		self.uniform_data.push(data);
-		self.uniform_names.push(name);
-
-		// return the handle
-		UniformHandle::new(uniform_handle)
-	}
-
-	pub fn set_uniform<T: 'static>(&mut self, handle: &UniformHandle<T>, t: T) where T: GLSLType {
-		// get the index of the uniform
-		let index = match self.draw_envs.iter().position(|&(_, h, _, _)| h == handle.get_id()) {
-			Some(index) => index,
-			None => unreachable!(),
-		};
-
-		// capture the data
-		self.uniform_data[index] = t.into_glsl_any();
-	}
-
-	pub fn free_uniform<T>(&mut self, handle: UniformHandle<T>) {
-		// get the index of the uniform
-		let index = match self.draw_envs.iter().position(|&(_, h, _, _)| h == handle.get_id()) {
-			Some(index) => index,
-			None => unreachable!(),
-		};
-
-		// remove
-		self.uniform_handles.swap_remove(index);
-		self.uniform_data.swap_remove(index);
-		self.uniform_names.swap_remove(index);
+		func(&mut self.draw_envs[index].2)
 	}
 
 	// THE BIG DRAW
@@ -342,32 +233,32 @@ impl DrawEngine {
 			gl::BindVertexArray(vao);
 		}
 
-		self.draw_envs.iter().for_each(|&(_, _, ref env, name)| {
+		self.draw_envs.iter().for_each(|&(_, _, ref env, line)| {
 			// get the program and activate it
-			let program_index = self.shader_handles.iter().position(|&handle| handle == env.shader).expect(format!("Program not bound to this draw env ({})", name).as_str());
+			let program_index = self.shader_handles.iter().position(|&handle| handle == env.shader).expect(format!("Program not bound to this draw env ({})", line).as_str());
 			let program = &self.shaders[program_index];
-			program.activate().expect(format!("Could not activate gl program ({})", self.shader_names[program_index]).as_str());
+			program.activate().expect(format!("Could not activate gl program ({})", self.shader_init_lines[program_index]).as_str());
 
 			// get the index buffer and bind it
-			let indices_index = self.buffer_handles.iter().position(|&handle| handle == env.indices).expect(format!("Index buffer not bound to this draw en ({})", name).as_str());
-			let indices = &self.buffer_data[indices_index];
+			let indices_index = self.buffer_handles.iter().position(|&handle| handle == env.indices).expect(format!("Index buffer not bound to this draw en ({})", line).as_str());
+			let indices = &self.buffers[indices_index];
 			if indices.buffer_type != gl::ELEMENT_ARRAY_BUFFER {
-				panic!(format!("Not a valid buffer_handle ({})", self.buffer_names[indices_index]));
+				panic!(format!("Not a valid buffer_handle ({})", self.buffer_init_lines[indices_index]));
 			}
 
 			unsafe {
-				gl::BindBuffer(indices.buffer_type, indices.resource.as_ref().expect(format!("This buffer is not owned by the draw engine ({})", self.buffer_names[indices_index]).as_str()).get_handle());
+				gl::BindBuffer(indices.buffer_type, indices.resource.get_handle());
 			}
 
 			// bind all the buffers and set up the pointer stuff
 			env.buffers.iter().for_each(|&(env_buf_handle, loc)| {
 				// get the buffers
-				let buffer_index = self.buffer_handles.iter().position(|&handle| handle == env_buf_handle).expect(format!("Not a valid buffer_handle ({})", self.buffer_names[env_buf_handle]).as_str());
-				let buffer = &self.buffer_data[buffer_index];
+				let buffer_index = self.buffer_handles.iter().position(|&handle| handle == env_buf_handle).expect(format!("Not a valid buffer_handle ({})", self.buffer_init_lines[env_buf_handle]).as_str());
+				let buffer = &self.buffers[buffer_index];
 
 				// set up the buffer array data
 				unsafe {
-					gl::BindBuffer(buffer.buffer_type, buffer.resource.as_ref().expect(format!("This buffer is not owned by the draw engine ({})", self.buffer_names[indices_index]).as_str()).get_handle());
+					gl::BindBuffer(buffer.buffer_type, buffer.resource.get_handle());
 					gl::EnableVertexAttribArray(loc);
 					gl::VertexAttribPointer(loc, buffer.glsl_type_count, buffer.glsl_type, gl::FALSE, 0, 0u32 as _);
 				}
@@ -377,7 +268,7 @@ impl DrawEngine {
 			let mut texture_target = 0;
 			env.textures.iter().for_each(|&(env_tex_handle, loc)| {
 				// get the texture
-				let texture_index = self.texture_handles.iter().position(|&handle| handle == env_tex_handle).expect(format!("Not a valid texture_handle ({})", self.texture_names[env_tex_handle]).as_str());
+				let texture_index = self.texture_handles.iter().position(|&handle| handle == env_tex_handle).expect(format!("Not a valid texture_handle ({})", self.texture_init_lines[env_tex_handle]).as_str());
 				let texture = &self.textures[texture_index];
 
 				// uniform magic aaaay
@@ -422,11 +313,7 @@ impl DrawEngine {
 			}
 
 			// Uniforms
-			env.uniforms.iter().for_each(|&(env_unif_handle, loc)| {
-				// get the uniform data
-				let uniform_index = self.uniform_handles.iter().position(|&handle| handle == env_unif_handle).expect(format!("Not a valid uniform_handle ({})", self.uniform_names[env_unif_handle]).as_str());
-				let uniform_data = &self.uniform_data[uniform_index];
-
+			env.uniforms.iter().for_each(|&(ref uniform_data, loc)| {
 				// make the appropriate opengl uniform call
 				unsafe {
 					match uniform_data {

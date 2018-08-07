@@ -1,12 +1,12 @@
 use std::marker::PhantomData;
 
 // Uniform handle
-pub struct UniformHandle<T> {
+pub struct BufferHandle<T> {
 	id: usize,
 	phantom: PhantomData<T>,
 }
 
-impl<T> UniformHandle<T> {
+impl<T> BufferHandle<T> {
 	pub(super) fn new(id: usize) -> Self {
 		Self {
 			id,
@@ -42,6 +42,23 @@ pub struct ShaderHandle {
 }
 
 impl ShaderHandle {
+	pub(super) fn new(id: usize) -> Self {
+		Self {
+			id,
+		}
+	}
+
+	pub(super) fn get_id(&self) -> usize {
+		self.id
+	}
+}
+
+// Draw env handle
+pub struct DrawEnvHandle {
+	id: usize,
+}
+
+impl DrawEnvHandle {
 	pub(super) fn new(id: usize) -> Self {
 		Self {
 			id,

@@ -9,7 +9,6 @@ pub use self::texture::*;
 pub use self::handles::*;
 
 mod buffer;
-mod buffer_data;
 mod draw_engine;
 mod draw_env;
 mod gl_buffer_resource;
