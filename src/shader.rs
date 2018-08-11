@@ -19,7 +19,7 @@ pub enum ShaderError {
 	//
 	NonexistentAttrib,
 	//
-	ShaderBuildFailure,
+	ShaderBuildFailure(String),
 	//
 	ProgramLinkFailure,
 }
@@ -127,7 +127,21 @@ impl Shader {
 			let mut shader_compile_success: i32 = 0;
             gl::GetShaderiv(shader_resource.get_handle(), gl::COMPILE_STATUS, &mut shader_compile_success);
             if shader_compile_success == gl::FALSE as i32 {
-				return Err(ShaderError::ShaderBuildFailure);
+            	// get the error message length
+                let mut error_length: i32 = 0;
+                gl::GetShaderiv(shader_resource.get_handle(), gl::INFO_LOG_LENGTH, &mut error_length);
+
+                // get the error message
+                let mut error_log = Vec::<u8>::with_capacity(error_length as usize);
+                error_log.set_len(error_length as usize);
+                gl::GetShaderInfoLog(
+                    shader_resource.get_handle(),
+                    error_length,
+                    &mut error_length,
+                    error_log.as_mut_ptr() as _,
+                );
+
+				return Err(ShaderError::ShaderBuildFailure(String::from_utf8(error_log).unwrap()));
 			}
 		}
 
