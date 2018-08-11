@@ -11,6 +11,7 @@ impl GLShaderResource {
 		// check if shader_type is valhandle
 		match shader_type {
 			gl::VERTEX_SHADER => { },
+			gl::GEOMETRY_SHADER => { },
 			gl::FRAGMENT_SHADER => { },
 			_ => panic!("This shader type is not currently supported!"),
 		}
