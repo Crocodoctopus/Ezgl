@@ -205,11 +205,11 @@ pub struct Dmat4(pub [GLdouble; 16]);
 #[repr(C)]
 #[derive(Debug)]
 #[derive(Copy, Clone)]
-pub struct ByteTri(pub [GLubyte; 3]);
+pub struct IboUByte(pub GLubyte);
 #[repr(C)]
 #[derive(Debug)]
 #[derive(Copy, Clone)]
-pub struct ShortTri(pub [GLushort; 3]);
+pub struct IboUShort(pub GLushort);
 
 // impls
 impl GLSLType for Bool {
@@ -592,7 +592,7 @@ impl GLSLType for Dmat4 {
 	}
 }
 
-impl GLSLType for ByteTri {
+impl GLSLType for IboUByte {
 	fn get_type() -> (GLint, GLenum) {
 		(-1, gl::UNSIGNED_BYTE)
 	}
@@ -602,7 +602,7 @@ impl GLSLType for ByteTri {
 	}
 }
 
-impl GLSLType for ShortTri {
+impl GLSLType for IboUShort {
 	fn get_type() -> (GLint, GLenum) {
 		(-1, gl::UNSIGNED_SHORT)
 	}

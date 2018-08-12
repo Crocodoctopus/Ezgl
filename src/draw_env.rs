@@ -18,6 +18,7 @@ pub struct DrawEnv {
 	// core stuff
 	pub(super) count: usize,
 	pub(super) offset: usize,
+	pub(super) draw_type: GLenum,
 	pub(super) shader: usize,
 	pub(super) indices: usize,
 	pub(super) buffers: Vec<(usize, GLuint)>,
@@ -34,6 +35,7 @@ impl DrawEnv {
 		Self {
 			count: 0,
 			offset: 0,
+			draw_type: 0,
 
 			shader: usize::max_value(),
 			indices: usize::max_value(),
@@ -66,9 +68,10 @@ impl DrawEnv {
 		println!("End print");
 	}
 
-	pub fn set_draw_count(&mut self, count: usize, offset: usize) {
+	pub fn set_draw_count(&mut self, count: usize, offset: usize, draw_type: GLenum) {
 		self.count = count;
 		self.offset = offset;
+		self.draw_type = draw_type;
 	}
 
 	pub fn add_shader(&mut self, shader_handle: &ShaderHandle) {

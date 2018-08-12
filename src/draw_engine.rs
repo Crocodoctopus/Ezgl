@@ -44,7 +44,6 @@ extern "system" fn callback(source: GLenum, gltype: GLenum, id: GLuint, severity
 
 impl DrawEngine {
 	pub fn new() -> Self {
-		// TODO: create a VAO(?)
 		Self {
 			buffer_counter: 0,
 			buffer_handles: Vec::new(),
@@ -240,6 +239,13 @@ impl DrawEngine {
 				panic!(format!("Not a valid buffer_handle ({})", self.buffer_init_lines[indices_index]));
 			}
 
+			// check if  if indices.buffer_type is valid
+			match indices.buffer_type {
+				gl::ELEMENT_ARRAY_BUFFER => { },
+				_ => panic!("Invalid IBO type."),
+			}
+
+
 			unsafe {
 				gl::BindBuffer(indices.buffer_type, indices.resource.get_handle());
 			}
@@ -341,13 +347,20 @@ impl DrawEngine {
 				}
 			});
 
+			// check if a draw type is selected
+			let mult = match env.draw_type {
+				gl::POINTS => 1,
+				gl::TRIANGLES => 3,
+				_ => panic!("Invalid draw type."),
+			};
+
 			// draw
 			unsafe {
 				gl::DrawElements(
-					gl::TRIANGLES,
-					(env.count * 3) as _,
+					env.draw_type,
+					(env.count * mult) as _,
 					indices.glsl_type,
-					(env.offset * 3) as _);
+					(env.offset * mult) as _);
 			}
 		});
 
