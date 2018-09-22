@@ -29,6 +29,7 @@ pub struct DrawEngine {
 	texture_init_lines: Vec<u32>,
 
 	// draw command stuff
+	vao: GLuint,
 	draw_env_counter: usize,
 	draw_envs: Vec<(f32, usize, DrawEnv, u32)>,
 }
@@ -44,6 +45,11 @@ extern "system" fn callback(source: GLenum, gltype: GLenum, id: GLuint, severity
 
 impl DrawEngine {
 	pub fn new() -> Self {
+		let mut vao = 0;
+		unsafe {
+			gl::GenVertexArrays(1, &mut vao);
+		}
+
 		Self {
 			buffer_counter: 0,
 			buffer_handles: Vec::new(),
@@ -60,6 +66,7 @@ impl DrawEngine {
 			textures: Vec::new(),
 			texture_init_lines: Vec::new(),
 
+			vao,
 			draw_env_counter: 0,
 			draw_envs: Vec::new(),
 		}
@@ -224,6 +231,7 @@ impl DrawEngine {
 	pub fn draw(&self) {
     	unsafe {
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
+            gl::BindVertexArray(self.vao);
         }
 
 		self.draw_envs.iter().for_each(|&(_, _, ref env, line)| {
@@ -363,9 +371,5 @@ impl DrawEngine {
 					(env.offset * mult) as _);
 			}
 		});
-
-		unsafe {
-			assert!(gl::GetError() == gl::NO_ERROR);
-		}
 	}
 }
