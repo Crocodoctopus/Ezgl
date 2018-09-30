@@ -1,9 +1,11 @@
 use gl;
 use gl::types::*;
 
+use std::marker::PhantomData;
+
 use std;
 use super::gl_buffer_resource::*;
-use super::glsl_type::*;
+use super::glsl_types::*;
 
 #[derive(Debug)]
 pub enum BufferError {
@@ -12,7 +14,15 @@ pub enum BufferError {
 	InvalidGLSLType
 }
 
-pub struct Buffer {
+pub(super) trait GlBuffer {
+	fn get_buffer_type(&self) -> GLenum;
+	fn get_glsl_type_count(&self) -> GLint;
+	fn get_glsl_type(&self) -> GLenum;
+	fn get_resource(&self) -> &GLBufferResource;
+}
+
+pub struct Buffer<T: GLSLType> {
+	phantom: PhantomData<T>,
 	//data: Vec<T>,
 	pub(super) buffer_type: GLenum,
 	pub(super) glsl_type_count: GLint,
@@ -20,9 +30,29 @@ pub struct Buffer {
 	pub(super) resource: GLBufferResource,
 }
 
-impl Buffer {
-	pub(super) fn new<T>() -> Self where T: GLSLType {
+impl<T: GLSLType> GlBuffer for Buffer<T> {
+	fn get_buffer_type(&self) -> GLenum {
+		self.buffer_type
+	}
+
+	fn get_glsl_type_count(&self) -> GLint {
+		self.glsl_type_count
+	}
+
+	fn get_glsl_type(&self) -> GLenum {
+		self.glsl_type
+	}
+
+	fn get_resource(&self) -> &GLBufferResource {
+		&self.resource
+	}
+
+}
+
+impl<T: GLSLType> Buffer<T> {
+	pub fn new() -> Self {
 		Self {
+			phantom: PhantomData,
 			//data: Vec::new(),
 			buffer_type: 0,
 			glsl_type_count: T::get_type().0,
@@ -30,27 +60,8 @@ impl Buffer {
 			resource: GLBufferResource::new(),
 		}
 	}
-}
 
-// mutable functions
-pub trait MutableBuffer<T> {
-	fn init(&mut self, GLenum, Box<[T]>) -> Result<(), BufferError>;
-	fn blit(&mut self, usize, &[T]) -> Result<(), BufferError> where T: Copy;
-}
-
-// immutable functions
-/*pub trait ImmutableBuffer<T> {
-	fn get(&self);
-}
-
-impl<T> ImmutableBuffer<T> for MutableBuffer<T> {
-	fn get(&self) {
-		
-	}
-}*/
-
-impl<T> MutableBuffer<T> for Buffer {
-	fn init(&mut self, buffer_type: GLenum, data: Box<[T]>) -> Result<(), BufferError> {
+	pub fn init(&mut self, buffer_type: GLenum, data: Box<[T]>) -> Result<(), BufferError> {
 		// check for vailidity
 		match buffer_type {
 			gl::ARRAY_BUFFER => {
@@ -73,7 +84,7 @@ impl<T> MutableBuffer<T> for Buffer {
 
 		// upload the data
 		unsafe {
-			gl::BindBuffer(buffer_type, self.resource.get_handle());
+			gl::BindBuffer(buffer_type, self.resource.get_raw());
 			gl::BufferData(
 				buffer_type, 
 				(data.len() * std::mem::size_of::<T>()) as _,
@@ -86,7 +97,7 @@ impl<T> MutableBuffer<T> for Buffer {
 		Ok(())
 	}
 
-	fn blit(&mut self, pos: usize, data: &[T]) -> Result<(), BufferError> where T: Copy {
+	pub fn blit(&mut self, pos: usize, data: &[T]) -> Result<(), BufferError> where T: Copy {
 		// check for vailidity
 		match self.buffer_type {
 			0 => return Err(BufferError::BufferNotInitialized),
@@ -95,7 +106,7 @@ impl<T> MutableBuffer<T> for Buffer {
 
 		// upload the data
 		unsafe {
-			gl::BindBuffer(self.buffer_type, self.resource.get_handle());
+			gl::BindBuffer(self.buffer_type, self.resource.get_raw());
 			gl::BufferSubData(
 				self.buffer_type,
 				(pos * std::mem::size_of::<T>()) as _,

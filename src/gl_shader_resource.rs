@@ -27,7 +27,7 @@ impl GLShaderResource {
 		}
 	}
 
-	pub(super) fn get_handle(&self) -> GLuint {
+	pub(super) unsafe fn get_raw(&self) -> GLuint {
 		self.handle
 	}
 }

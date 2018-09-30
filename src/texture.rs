@@ -18,7 +18,7 @@ pub struct Texture2D {
 }
 
 impl Texture2D {
-	pub(super) fn new() -> Self {
+	pub fn new() -> Self {
 		Self {
 			width: 0,
 			height: 0,
@@ -42,7 +42,7 @@ impl Texture2D {
 
         // upload the data
         unsafe {
-            gl::BindTexture(gl::TEXTURE_2D, self.resource.get_handle());
+            gl::BindTexture(gl::TEXTURE_2D, self.resource.get_raw());
             gl::TexImage2D(
                 gl::TEXTURE_2D,
                 0,
@@ -89,7 +89,7 @@ impl Texture2D {
 
         // blit
         unsafe {
-            gl::BindTexture(gl::TEXTURE_2D, self.resource.get_handle());
+            gl::BindTexture(gl::TEXTURE_2D, self.resource.get_raw());
             gl::TexSubImage2D(
                 gl::TEXTURE_2D,
                 0,

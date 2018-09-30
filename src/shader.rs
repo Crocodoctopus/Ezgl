@@ -2,190 +2,67 @@ use gl;
 use gl::types::*;
 
 use super::gl_shader_resource::*;
-use super::gl_program_resource::*;
 
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::*;
 
-#[derive(Debug)]
-pub enum ShaderError {
-	// If the program was not linked correctly
-	InvalidProgram,
-	// If a shader was not built correctly
-	InvalidShader,
-	// Does not contained the specified uniform name
-	NonexistentUniform,
-	//
-	NonexistentAttrib,
-	//
-	ShaderBuildFailure(String),
-	//
-	ProgramLinkFailure,
-}
-
 pub struct Shader {
-	program_resource: Option<GLProgramResource>,
-	shader_codes: Vec<String>,
-	shader_types: Vec<GLenum>,
-	shader_resources: Vec<Option<GLShaderResource>>,
+	pub(super) resource: GLShaderResource,
 }
 
 impl Shader {
-	pub(super) fn new() -> Self {
-		Self {
-			program_resource: None,
-			shader_codes: Vec::new(),
-			shader_types: Vec::new(),
-			shader_resources: Vec::new(),
-		}
-	}
-
-	pub fn get_attrib_loc(&self, name: &'static str) -> Result<GLint, ShaderError> {
-		match self.program_resource {
-			Some(ref res) => {
-				unsafe {
-					let loc = gl::GetAttribLocation(res.get_handle(), name.as_ptr() as *const _ as _);
-					if loc == -1 {
-						return Err(ShaderError::NonexistentAttrib);
-					} else {
-						return Ok(loc);
-					}
-				}
-			},
-			None => return Err(ShaderError::InvalidProgram),
-		}
-	}
-
-	pub fn get_uniform_loc(&self, name: &'static str) -> Result<GLint, ShaderError> {
-		match self.program_resource {
-			Some(ref res) => {
-				unsafe {
-					let loc = gl::GetUniformLocation(res.get_handle(), name.as_ptr() as *const _ as _);
-					if loc == -1 {
-						return Err(ShaderError::NonexistentUniform);
-					} else {
-						return Ok(loc);
-					}
-				}
-			},
-			None => return Err(ShaderError::InvalidProgram),
-		}
-	}
-
-	pub(super) fn activate(&self) -> Result<(), ShaderError> {
-		// if the shader is invalid
-		if self.program_resource.is_none() {
-			return Err(ShaderError::InvalidProgram);
-		}
-
-		unsafe {
-			gl::UseProgram(self.program_resource.as_ref().unwrap().get_handle());
-		}
-
-		Ok(())
-	}
-
-	pub fn detach_shader(&mut self, shader_type: GLenum) {
-		let index = match self.shader_types.iter().position(|&t| t == shader_type) {
-			Some(index) => index,
-			None => return,
+	pub fn from_file(path: &Path, shader_type: GLenum) -> Result<Shader, String> {
+		// io
+		let mut file = match File::open(path) {
+			Ok(file) => file,
+			Err(_) => return Err(String::from("Could not open file specified")),
 		};
+		let mut code = String::new();
+		file.read_to_string(&mut code).expect("Something went wrong"); // can this happen?
 
-		self.shader_codes.swap_remove(index);
-		self.shader_codes.swap_remove(index);
-		self.shader_resources.swap_remove(index);
-	}
+		// get a shader resource
+		let resource = GLShaderResource::new(shader_type);
 
-	pub fn attach_shader(&mut self, shader_code: String, shader_type: GLenum) -> Result<(), ShaderError> {
-		// index
-		let index = match self.shader_types.iter().position(|&t| t == shader_type) {
-			Some(index) => index,
-			None => {
-				self.shader_codes.push(shader_code);
-				self.shader_types.push(shader_type);
-				self.shader_resources.push(None);
-				self.shader_types.len() - 1
-			}
-		};
-
-		// create a resource
-		let shader_resource = GLShaderResource::new(shader_type);
-
-		// upload the shader code
+		// upload the code to the gpu
 		unsafe {
 			gl::ShaderSource(
-				shader_resource.get_handle(),
+				resource.get_raw(),
 				1,
-				&self.shader_codes[index].as_ptr() as *const *const u8 as _,
-				(&(&self.shader_codes[index]).len() as *const usize) as _);
-			gl::CompileShader(shader_resource.get_handle());
+				&code.as_ptr() as *const *const u8 as _,
+				(&(&code).len() as *const usize) as _);
 		}
 
-		// check for errors
+		// compile
 		unsafe {
-			let mut shader_compile_success: i32 = 0;
-            gl::GetShaderiv(shader_resource.get_handle(), gl::COMPILE_STATUS, &mut shader_compile_success);
-            if shader_compile_success == gl::FALSE as i32 {
-            	// get the error message length
-                let mut error_length: i32 = 0;
-                gl::GetShaderiv(shader_resource.get_handle(), gl::INFO_LOG_LENGTH, &mut error_length);
+			gl::CompileShader(resource.get_raw());
+		}
 
-                // get the error message
-                let mut error_log = Vec::<u8>::with_capacity(error_length as usize);
-                error_log.set_len(error_length as usize);
-                gl::GetShaderInfoLog(
-                    shader_resource.get_handle(),
-                    error_length,
-                    &mut error_length,
-                    error_log.as_mut_ptr() as _,
-                );
+		// check for errors (this may not be necessary since opengl has an error callback)
+		unsafe {
+			let mut shader_compiler_success: i32 = 0;
+			gl::GetShaderiv(resource.get_raw(), gl::COMPILE_STATUS, &mut shader_compiler_success);
+			if shader_compiler_success == gl::FALSE as i32 {
+				// get the error message length
+				let mut error_length: i32 = 0;
+				gl::GetShaderiv(resource.get_raw(), gl::INFO_LOG_LENGTH, &mut error_length);
 
-				return Err(ShaderError::ShaderBuildFailure(String::from_utf8(error_log).unwrap()));
+				// get the error message
+				let mut error_log = Vec::<u8>::with_capacity(error_length as usize);
+				error_log.set_len(error_length as usize);
+				gl::GetShaderInfoLog(
+					resource.get_raw(),
+					error_length,
+					&mut error_length,
+					error_log.as_mut_ptr() as _);
+
+				return Err(String::from_utf8(error_log).unwrap());
 			}
 		}
 
-		// insert the resource into the vec and return
-		self.shader_resources[index] = Some(shader_resource);
-		return Ok(());
-	}
-
-	// This will probably get removed later
-	pub fn attach_shader_from_file(&mut self, path: &Path, shader_type: GLenum) -> Result<(), ShaderError> {
-		let mut file = File::open(path).expect("file not found ye");
-		let mut code = String::new();
-		file.read_to_string(&mut code).expect("sdafadf");
-		self.attach_shader(code, shader_type)
-	}
-
-	pub fn build(&mut self) -> Result<(), ShaderError> {
-		// first, check to see if all resources are Some (are valid)
-		if self.shader_resources.iter().any(|res| res.is_none()) {
-			return Err(ShaderError::InvalidShader);
-		}
-
-		// second, create a program
-		let program_resource = GLProgramResource::new();
-
-		// third, attach them all
-		self.shader_resources.iter().for_each(|res| unsafe { gl::AttachShader(program_resource.get_handle(), res.as_ref().unwrap().get_handle()); });
-
-		// fourth, link
-		unsafe {
-			gl::LinkProgram(program_resource.get_handle());
-		}
-
-		// fifth, check for errors
-		unsafe {
-            let mut program_link_success: i32 = 0;
-            gl::GetProgramiv(program_resource.get_handle(), gl::LINK_STATUS, &mut program_link_success);
-            if program_link_success == gl::FALSE as i32 {
-            	return Err(ShaderError::ProgramLinkFailure);
-            }	
-		}
-
-		// finally, 
-		self.program_resource = Some(program_resource);
-		Ok(())
+		// return
+		Ok(Shader {
+			resource,
+		})
 	}
 }
