@@ -1,6 +1,6 @@
 [package]
-name = "wow-not-painful-opengl"
-version = "0.1.0"
+name = "ezgl"
+version = "0.2.0"
 authors = ["Akourne Burschstein <Crocodoctopus@gmail.com>"]
 
 [dependencies]
