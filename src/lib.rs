@@ -1,6 +1,7 @@
 extern crate gl;
 
 pub mod draw;
+pub mod instant_draw;
 pub mod buffer;
 pub mod texture;
 pub mod shader;
@@ -17,3 +18,4 @@ pub use self::texture::*;
 pub use self::shader::*;
 pub use self::program::*;
 pub use self::draw::*;
+pub use self::instant_draw::*;
