@@ -1,19 +1,24 @@
 use gl;
 use gl::types::*;
 
+use png;
+use std::path::*;
+use std::fs::File;
+
 use super::gl_texture_resource::*;
 
 #[derive(Debug)]
 pub enum Texture2DError {
+    FileNotFound,
 	InvalidDataDimensions,
     OutOfBounds,
     FormatNotSupported,
 }
 
 pub struct Texture2D {
-	width: u32,
-	height: u32,
-	format: GLenum,
+	pub width: u32,
+	pub height: u32,
+	pub format: GLenum,
 	pub(super) resource: GLTextureResource,
 }
 
@@ -26,6 +31,30 @@ impl Texture2D {
 			resource: GLTextureResource::new(),
 		}
 	}
+
+    pub fn init_from_file(&mut self, path: &Path) -> Result<(), Texture2DError> {
+        let file = match File::open(path) {
+            Ok(file) => file,
+            Err(_) => return Err(Texture2DError::FileNotFound),
+        };
+
+        let png_decoder = png::Decoder::new(file);
+        let (info, mut reader) = match png_decoder.read_info() {
+            Ok((info, reader)) => (info, reader),
+            Err(_) => return Err(Texture2DError::FormatNotSupported),
+        };
+
+        let mut buf = vec![0; info.buffer_size()];
+        reader.next_frame(&mut buf).unwrap();
+
+        let format = match info.color_type {
+            png::ColorType::RGB => gl::RGB,
+            png::ColorType::RGBA => gl::RGBA,
+            _ => return Err(Texture2DError::FormatNotSupported),
+        };
+
+        self.init(info.width, info.height, format, buf.into_boxed_slice())
+    }
 
 	pub fn init(&mut self, width: u32, height: u32, format: GLenum, data: Box<[u8]>) -> Result<(), Texture2DError> {
         // get the number of bytes per color

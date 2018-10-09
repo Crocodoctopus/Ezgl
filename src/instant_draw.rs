@@ -1,7 +1,5 @@
 use gl;
 use gl::types::*;
-use std::rc::Rc;
-use std::cell::RefCell;
 use std::ffi::CStr;
 use super::program::*;
 use super::texture::*;
@@ -34,12 +32,12 @@ extern "system" fn callback(source: GLenum, gltype: GLenum, id: GLuint, severity
 }
 
 impl<'a> InstantDraw<'a> {
-	// the dirties of hacks
+	// the dirtiest of hacks
 	pub fn bind_vao() {
-		static mut vao: GLuint = 0;
+		static mut VAO: GLuint = 0;
 		unsafe {
-			gl::GenVertexArrays(1, &mut vao);
-			gl::BindVertexArray(vao);
+			gl::GenVertexArrays(1, &mut VAO);
+			gl::BindVertexArray(VAO);
 		}
 	}
 
@@ -99,7 +97,7 @@ impl<'a> InstantDraw<'a> {
 		self.blend = Some((arg1, arg2));
 	}
 
-	pub fn draw(mut self) {
+	pub fn draw(self) {
 		// extract the core resources
 		let program = self.program.as_ref().expect("No program attached");
 		let ibo = self.ibo.as_ref().expect("No ibo attached");

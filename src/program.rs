@@ -1,5 +1,4 @@
 use gl;
-use gl::types::*;
 
 use super::shader::*;
 use super::gl_program_resource::*;
@@ -20,7 +19,7 @@ impl ProgramBuilder {
 		self
 	}
 
-	pub fn build(mut self) -> Result<Program, String> {
+	pub fn build(self) -> Result<Program, String> {
 		let resource = GLProgramResource::new();
 
 		self.shaders.iter().for_each(|shader| {

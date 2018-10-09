@@ -1,4 +1,5 @@
 extern crate gl;
+extern crate png;
 
 pub mod draw;
 pub mod instant_draw;
@@ -11,6 +12,7 @@ pub mod gl_buffer_resource;
 pub mod gl_texture_resource;
 pub mod gl_shader_resource;
 pub mod gl_program_resource;
+pub mod global_lock;
 
 pub use self::buffer::*;
 pub use self::glsl_types::*;

@@ -34,12 +34,12 @@ extern "system" fn callback(source: GLenum, gltype: GLenum, id: GLuint, severity
 }
 
 impl Draw {
-	// the dirties of hacks
+	// the dirtiest of hacks
 	pub fn bind_vao() {
-		static mut vao: GLuint = 0;
+		static mut VAO: GLuint = 0;
 		unsafe {
-			gl::GenVertexArrays(1, &mut vao);
-			gl::BindVertexArray(vao);
+			gl::GenVertexArrays(1, &mut VAO);
+			gl::BindVertexArray(VAO);
 		}
 	}
 
