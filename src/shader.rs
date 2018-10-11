@@ -6,13 +6,14 @@ use super::gl_shader_resource::*;
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::*;
+use std::ffi::OsStr;
 
 pub struct Shader {
 	pub(super) resource: GLShaderResource,
 }
 
 impl Shader {
-	pub fn from_file(path: &Path, shader_type: GLenum) -> Result<Shader, String> {
+	pub fn from_file_with_type(path: &Path, shader_type: GLenum) -> Result<Shader, String> {
 		// io
 		let mut file = match File::open(path) {
 			Ok(file) => file,
@@ -64,5 +65,15 @@ impl Shader {
 		Ok(Shader {
 			resource,
 		})
+	}
+
+	pub fn from_file(path: &Path) -> Result<Shader, String> {
+		let shader_type = match path.extension().and_then(OsStr::to_str) {
+        	Some("geom") => gl::GEOMETRY_SHADER,
+        	Some("frag") => gl::FRAGMENT_SHADER,
+        	Some("vert") => gl::VERTEX_SHADER,
+        	_ => return Err(String::from("Unsupported format")),
+    	};
+    	Shader::from_file_with_type(path, shader_type)
 	}
 }
