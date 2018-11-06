@@ -135,7 +135,7 @@ impl<'a> InstantDraw<'a> {
 				gl::EnableVertexAttribArray(loc);
 				match buffer.get_glsl_type() {
 					gl::BYTE | gl::UNSIGNED_BYTE | gl::SHORT | gl::UNSIGNED_SHORT | gl::INT | gl::UNSIGNED_INT => {
-						gl::VertexAttribPointer(loc, buffer.get_glsl_type_count(), buffer.get_glsl_type(), gl::FALSE, 0, 0u32 as _);
+						gl::VertexAttribIPointer(loc, buffer.get_glsl_type_count(), buffer.get_glsl_type(), 0, 0u32 as _);
 					}
 					_ => {
 						gl::VertexAttribPointer(loc, buffer.get_glsl_type_count(), buffer.get_glsl_type(), gl::FALSE, 0, 0u32 as _);
