@@ -133,7 +133,15 @@ impl<'a> InstantDraw<'a> {
 			unsafe {
 				gl::BindBuffer(buffer.get_buffer_type(), buffer.get_resource().get_raw());
 				gl::EnableVertexAttribArray(loc);
-				gl::VertexAttribPointer(loc, buffer.get_glsl_type_count(), buffer.get_glsl_type(), gl::FALSE, 0, 0u32 as _);
+				match buffer.get_glsl_type() {
+					gl::BYTE | gl::UNSIGNED_BYTE | gl::SHORT | gl::UNSIGNED_SHORT | gl::INT | gl::UNSIGNED_INT => {
+						gl::VertexAttribPointer(loc, buffer.get_glsl_type_count(), buffer.get_glsl_type(), gl::FALSE, 0, 0u32 as _);
+					}
+					_ => {
+						gl::VertexAttribPointer(loc, buffer.get_glsl_type_count(), buffer.get_glsl_type(), gl::FALSE, 0, 0u32 as _);
+					}
+				}
+				
 			}
 		});
 
