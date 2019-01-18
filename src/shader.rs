@@ -57,7 +57,10 @@ impl Shader {
 					&mut error_length,
 					error_log.as_mut_ptr() as _);
 
-				return Err(String::from_utf8(error_log).unwrap());
+                let err_string = format!("{}: {}", path.to_str().unwrap(), String::from_utf8(error_log).unwrap());
+                return Err(err_string);
+
+				//return Err(path.to_str().append(String::from_utf8(error_log).unwrap()));
 			}
 		}
 
