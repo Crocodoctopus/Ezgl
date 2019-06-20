@@ -12,16 +12,36 @@ pub struct Shader {
 	pub(super) resource: GLShaderResource,
 }
 
+#[derive(Debug, Clone)]
+pub enum ShaderError {
+	UnsupportedExtension(String),
+	CouldNotOpenFile(PathBuf),
+	CompileError(String),
+	Other, // [todo: the fuck does other mean?]
+}
+
 impl Shader {
-	pub fn from_file_with_type(path: &Path, shader_type: GLenum) -> Result<Shader, String> {
-		// io
+	pub fn from_file(path: &Path) -> Result<Shader, ShaderError> {
+		let shader_type = match path.extension().and_then(OsStr::to_str) {
+        	Some("geom") => gl::GEOMETRY_SHADER,
+        	Some("frag") => gl::FRAGMENT_SHADER,
+        	Some("vert") => gl::VERTEX_SHADER,
+        	Some(s) => return Err(ShaderError::UnsupportedExtension(s.to_owned())),
+        	None => return Err(ShaderError::Other),
+    	};
+
+    	// io
 		let mut file = match File::open(path) {
 			Ok(file) => file,
-			Err(_) => return Err(String::from("Could not open file specified")),
+			Err(_) => return Err(ShaderError::CouldNotOpenFile(path.to_owned())),
 		};
 		let mut code = String::new();
 		file.read_to_string(&mut code).expect("Something went wrong"); // can this happen?
 
+    	Shader::from_string(code, shader_type)
+	}
+
+	pub fn from_string(code: String, shader_type: GLenum) -> Result<Shader, ShaderError> {
 		// get a shader resource
 		let resource = GLShaderResource::new(shader_type);
 
@@ -57,8 +77,8 @@ impl Shader {
 					&mut error_length,
 					error_log.as_mut_ptr() as _);
 
-                let err_string = format!("{}: {}", path.to_str().unwrap(), String::from_utf8(error_log).unwrap());
-                return Err(err_string);
+                let err_string = format!("?: {}", String::from_utf8(error_log).unwrap());
+                return Err(ShaderError::CompileError(err_string));
 
 				//return Err(path.to_str().append(String::from_utf8(error_log).unwrap()));
 			}
@@ -68,15 +88,5 @@ impl Shader {
 		Ok(Shader {
 			resource,
 		})
-	}
-
-	pub fn from_file(path: &Path) -> Result<Shader, String> {
-		let shader_type = match path.extension().and_then(OsStr::to_str) {
-        	Some("geom") => gl::GEOMETRY_SHADER,
-        	Some("frag") => gl::FRAGMENT_SHADER,
-        	Some("vert") => gl::VERTEX_SHADER,
-        	_ => return Err(String::from("Unsupported format")),
-    	};
-    	Shader::from_file_with_type(path, shader_type)
 	}
 }
