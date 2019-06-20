@@ -9,10 +9,10 @@ use std::ffi::CStr;
 
 pub struct InstantDraw<'a> {
     // necessary
-    count: usize,
+    count: u32,
     draw_type: GLenum,
-    program: Option<&'a Program>,
-    ibo: Option<(&'a GLBufferResource, GLenum)>, // resource handle, type type
+    program: &'a Program,
+    ibo: (&'a GLBufferResource, GLenum), // resource handle, type type
 
     // optional
     buffers: Vec<(&'a GLBufferResource, GLenum, GLint, GLenum, GLuint)>, // resource handle, buffer type, type count, type type, attribute #
@@ -66,12 +66,16 @@ impl<'a> InstantDraw<'a> {
         }
     }
 
-    pub fn new() -> Self {
+    pub fn start_tri_draw<T: ElementType + 'static>(
+        count: u32,
+        program: &'a Program,
+        ibo: &'a Buffer<T>,
+    ) -> Self {
         Self {
-            count: 0,
-            draw_type: 0,
-            program: None,
-            ibo: None,
+            count: count * 3,
+            draw_type: gl::TRIANGLES,
+            program,
+            ibo: (&ibo.resource, T::get_type()),
 
             buffers: Vec::new(),
             textures: Vec::new(),
@@ -82,20 +86,11 @@ impl<'a> InstantDraw<'a> {
         }
     }
 
-    pub fn with_count<T: ElementType + 'static>(
-        &mut self,
-        num: usize,
-        draw_type: GLenum,
-        program: &'a Program,
-        ibo: &'a Buffer<T>,
-    ) {
-        self.count = num;
-        self.draw_type = draw_type;
-        self.program = Some(program);
-        self.ibo = Some((&ibo.resource, T::get_type()));
-    }
-
-    pub fn add_buffer<T: BufferType + 'static>(&mut self, buffer: &'a Buffer<T>, loc: GLuint) {
+    pub fn with_buffer<T: BufferType + 'static>(
+        mut self,
+        buffer: &'a Buffer<T>,
+        loc: GLuint,
+    ) -> Self {
         self.buffers.push((
             &buffer.resource,
             buffer.buffer_type,
@@ -103,54 +98,47 @@ impl<'a> InstantDraw<'a> {
             T::get_type().1,
             loc,
         ));
+        self
     }
 
-    pub fn add_texture(&mut self, texture: &'a Texture2D, loc: GLint) {
+    pub fn with_texture(mut self, texture: &'a Texture2D, loc: GLint) -> Self {
         self.textures.push((texture, loc));
+        self
     }
 
-    pub fn with_uniform(&mut self, t: GLSLAny, loc: GLint) {
+    pub fn with_uniform(mut self, t: GLSLAny, loc: GLint) -> Self {
         self.uniforms.push((t, loc));
+        self
     }
 
-    pub fn enable_depth(&mut self, arg1: GLenum) {
+    pub fn enable_depth(mut self, arg1: GLenum) -> Self {
         self.depth = Some(arg1);
+        self
     }
 
-    pub fn enable_blend(&mut self, arg1: GLenum, arg2: GLenum) {
+    pub fn enable_blend(mut self, arg1: GLenum, arg2: GLenum) -> Self {
         self.blend = Some((arg1, arg2));
+        self
     }
 
-    pub fn draw(mut self) {
-        // extract the core resources
-        let program = self.program.as_ref().expect("No program attached");
-        let (ibo_resource, ibo_type_type) = self.ibo.expect("No ibo attached");
+    pub fn draw(self) {
+        // if draw count is 0, do nothing
+        if self.count == 0 {
+            return;
+        }
 
+        // unsafe time
         unsafe {
-            gl::UseProgram(program.resource.get_raw());
-        }
+            // bind program
+            gl::UseProgram(self.program.resource.get_raw());
 
-        // check if the draw type and count is valid
-        let mult = match self.draw_type {
-            gl::POINTS => 1,
-            gl::TRIANGLES => 3,
-            _ => panic!("Invalid draw type"),
-        };
+            // bind element buffer
+            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.ibo.0.get_raw());
 
-        if self.count <= 0 {
-            panic!("Invalid draw count: {}", self.count);
-        }
-
-        // bind the IBO
-        unsafe {
-            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ibo_resource.get_raw());
-        }
-
-        // attach the buffers
-        // resource handle, buffer type, type count, type type, attribute #
-        for (buffer_resource, buffer_type, buffer_type_count, buffer_type_type, loc) in self.buffers
-        {
-            unsafe {
+            // bind other buffers
+            for (buffer_resource, buffer_type, buffer_type_count, buffer_type_type, loc) in
+                self.buffers
+            {
                 gl::BindBuffer(buffer_type, buffer_resource.get_raw());
                 gl::EnableVertexAttribArray(loc);
                 match buffer_type_type {
@@ -180,45 +168,19 @@ impl<'a> InstantDraw<'a> {
                     }
                 }
             }
-        }
 
-        // attach the textures
-        let mut texture_target = 0;
-        for (texture, loc) in self.textures {
-            unsafe {
+            // attach textures
+            let mut texture_target = 0;
+            for (texture, loc) in self.textures {
                 gl::Uniform1i(loc, texture_target as _);
                 gl::ActiveTexture(gl::TEXTURE0 + texture_target);
                 gl::BindTexture(gl::TEXTURE_2D, texture.resource.get_raw());
+
+                texture_target += 1;
             }
 
-            texture_target += 1;
-        }
-
-        // depth
-        unsafe {
-            match self.depth {
-                Some(arg1) => {
-                    gl::Enable(gl::DEPTH_TEST);
-                    gl::DepthFunc(arg1);
-                }
-                None => gl::Disable(gl::DEPTH_TEST),
-            }
-        }
-
-        // blend
-        unsafe {
-            match self.blend {
-                Some((arg1, arg2)) => {
-                    gl::Enable(gl::BLEND);
-                    gl::BlendFunc(arg1, arg2);
-                }
-                None => gl::Disable(gl::BLEND),
-            }
-        }
-
-        // uniforms
-        for (any, loc) in self.uniforms {
-            unsafe {
+            // uniforms
+            for (any, loc) in self.uniforms {
                 match any {
                     GLSLAny::Float(float) => gl::Uniform1f(loc, float),
                     GLSLAny::Vec2(vec2) => gl::Uniform2f(loc, vec2.0, vec2.1),
@@ -272,16 +234,27 @@ impl<'a> InstantDraw<'a> {
                     GLSLAny::None => unreachable!(),
                 }
             }
-        }
 
-        // draw
-        unsafe {
-            gl::DrawElements(
-                self.draw_type,
-                (self.count * mult) as _,
-                ibo_type_type,
-                (0 * mult) as _,
-            );
+            // depth
+            match self.depth {
+                Some(arg1) => {
+                    gl::Enable(gl::DEPTH_TEST);
+                    gl::DepthFunc(arg1);
+                }
+                None => gl::Disable(gl::DEPTH_TEST),
+            }
+
+            // blend
+            match self.blend {
+                Some((arg1, arg2)) => {
+                    gl::Enable(gl::BLEND);
+                    gl::BlendFunc(arg1, arg2);
+                }
+                None => gl::Disable(gl::BLEND),
+            }
+
+            // draw
+            gl::DrawElements(self.draw_type, self.count as _, self.ibo.1, 0 as _);
         }
     }
 }
