@@ -3,7 +3,7 @@ use gl::types::*;
 
 /// Wraps an opengl texture resource, provhandleing a destructor
 pub(super) struct GLTextureResource {
-    handle: GLuint
+    handle: GLuint,
 }
 
 impl GLTextureResource {
@@ -11,14 +11,12 @@ impl GLTextureResource {
     pub(super) fn new() -> Self {
         // create the handle
         let mut handle = 0;
-        unsafe { 
+        unsafe {
             gl::GenTextures(1, &mut handle as _);
         }
 
         // create the object
-        Self {
-            handle,
-        }
+        Self { handle }
     }
 
     pub(super) unsafe fn get_raw(&self) -> GLuint {

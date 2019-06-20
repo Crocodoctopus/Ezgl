@@ -2,35 +2,35 @@ use gl;
 use gl::types::*;
 
 use png;
-use std::path::*;
 use std::fs::File;
+use std::path::*;
 
 use super::gl_texture_resource::*;
 
 #[derive(Debug)]
 pub enum Texture2DError {
     FileNotFound,
-	InvalidDataDimensions,
+    InvalidDataDimensions,
     OutOfBounds,
     FormatNotSupported,
 }
 
 pub struct Texture2D {
-	pub width: u32,
-	pub height: u32,
-	pub format: GLenum,
-	pub(super) resource: GLTextureResource,
+    pub width: u32,
+    pub height: u32,
+    pub format: GLenum,
+    pub(super) resource: GLTextureResource,
 }
 
 impl Texture2D {
-	pub fn new() -> Self {
-		Self {
-			width: 0,
-			height: 0,
-			format: 0,
-			resource: GLTextureResource::new(),
-		}
-	}
+    pub fn new() -> Self {
+        Self {
+            width: 0,
+            height: 0,
+            format: 0,
+            resource: GLTextureResource::new(),
+        }
+    }
 
     pub fn init_from_file(&mut self, path: &Path) -> Result<(), Texture2DError> {
         let file = match File::open(path) {
@@ -56,7 +56,13 @@ impl Texture2D {
         self.init(info.width, info.height, format, buf.into_boxed_slice())
     }
 
-	pub fn init(&mut self, width: u32, height: u32, format: GLenum, data: Box<[u8]>) -> Result<(), Texture2DError> {
+    pub fn init(
+        &mut self,
+        width: u32,
+        height: u32,
+        format: GLenum,
+        data: Box<[u8]>,
+    ) -> Result<(), Texture2DError> {
         // get the number of bytes per color
         let bytes_per_color = match format {
             gl::RGB => 3,
@@ -66,7 +72,7 @@ impl Texture2D {
 
         // check if the data fits the regions
         if bytes_per_color * width * height != data.len() as u32 {
-        	return Err(Texture2DError::InvalidDataDimensions);
+            return Err(Texture2DError::InvalidDataDimensions);
         }
 
         // upload the data
@@ -81,11 +87,12 @@ impl Texture2D {
                 0,
                 format,
                 gl::UNSIGNED_BYTE,
-                data.as_ptr() as _);
-           gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::CLAMP_TO_EDGE as _);
-           gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::CLAMP_TO_EDGE as _);
-           gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::NEAREST as _);
-           gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::NEAREST as _);
+                data.as_ptr() as _,
+            );
+            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::CLAMP_TO_EDGE as _);
+            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::CLAMP_TO_EDGE as _);
+            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::NEAREST as _);
+            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::NEAREST as _);
         }
 
         // set some state
@@ -95,10 +102,17 @@ impl Texture2D {
 
         // ret
         Ok(())
-	}
+    }
 
     /// Blits a chunk of data to a region of a Texture2D object
-    pub fn blit(&mut self, x: u32, y: u32, width: u32, height: u32, data: Box<[u8]>) -> Result<(), Texture2DError> {
+    pub fn blit(
+        &mut self,
+        x: u32,
+        y: u32,
+        width: u32,
+        height: u32,
+        data: Box<[u8]>,
+    ) -> Result<(), Texture2DError> {
         // check if we're blitting out of bounds
         if x + width > self.width || y + height > self.height {
             return Err(Texture2DError::OutOfBounds);
@@ -113,7 +127,7 @@ impl Texture2D {
 
         // check if the data fits the regions
         if bytes_per_color * width * height != data.len() as u32 {
-        	return Err(Texture2DError::InvalidDataDimensions);
+            return Err(Texture2DError::InvalidDataDimensions);
         }
 
         // blit
@@ -128,7 +142,8 @@ impl Texture2D {
                 height as _,
                 self.format,
                 gl::UNSIGNED_BYTE,
-                data.as_ptr() as _);
+                data.as_ptr() as _,
+            );
         };
 
         // return success
