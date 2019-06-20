@@ -32,7 +32,7 @@ impl Texture2D {
         }
     }
 
-    pub fn init_from_file(&mut self, path: &Path) -> Result<(), Texture2DError> {
+    pub fn from_file(path: &Path) -> Result<Texture2D, Texture2DError> {
         let file = match File::open(path) {
             Ok(file) => file,
             Err(_) => return Err(Texture2DError::FileNotFound),
@@ -53,16 +53,17 @@ impl Texture2D {
             _ => return Err(Texture2DError::FormatNotSupported),
         };
 
-        self.init(info.width, info.height, format, buf.into_boxed_slice())
+        Texture2D::from_pixels(info.width, info.height, format, buf.into_boxed_slice())
     }
 
-    pub fn init(
-        &mut self,
+    pub fn from_pixels(
         width: u32,
         height: u32,
         format: GLenum,
         data: Box<[u8]>,
-    ) -> Result<(), Texture2DError> {
+    ) -> Result<Texture2D, Texture2DError> {
+        let mut tex = Texture2D::new();
+
         // get the number of bytes per color
         let bytes_per_color = match format {
             gl::RGB => 3,
@@ -77,7 +78,7 @@ impl Texture2D {
 
         // upload the data
         unsafe {
-            gl::BindTexture(gl::TEXTURE_2D, self.resource.get_raw());
+            gl::BindTexture(gl::TEXTURE_2D, tex.resource.get_raw());
             gl::TexImage2D(
                 gl::TEXTURE_2D,
                 0,
@@ -96,12 +97,12 @@ impl Texture2D {
         }
 
         // set some state
-        self.width = width;
-        self.height = height;
-        self.format = format;
+        tex.width = width;
+        tex.height = height;
+        tex.format = format;
 
         // ret
-        Ok(())
+        Ok(tex)
     }
 
     /// Blits a chunk of data to a region of a Texture2D object
