@@ -169,16 +169,6 @@ impl<'a> InstantDraw<'a> {
                 }
             }
 
-            // attach textures
-            let mut texture_target = 0;
-            for (texture, loc) in self.textures {
-                gl::Uniform1i(loc, texture_target as _);
-                gl::ActiveTexture(gl::TEXTURE0 + texture_target);
-                gl::BindTexture(gl::TEXTURE_2D, texture.resource.get_raw());
-
-                texture_target += 1;
-            }
-
             // uniforms
             for (any, loc) in self.uniforms {
                 match any {
@@ -233,6 +223,16 @@ impl<'a> InstantDraw<'a> {
                     }
                     GLSLAny::None => unreachable!(),
                 }
+            }
+
+            // attach textures
+            let mut texture_target = 0;
+            for (texture, loc) in self.textures {
+                gl::Uniform1i(loc, texture_target as _);
+                gl::ActiveTexture(gl::TEXTURE0 + texture_target);
+                gl::BindTexture(gl::TEXTURE_2D, texture.resource.get_raw());
+
+                texture_target += 1;
             }
 
             // depth

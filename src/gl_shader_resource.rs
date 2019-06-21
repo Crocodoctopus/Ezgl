@@ -1,21 +1,13 @@
 use gl;
 use gl::types::*;
 
-// Wraps an opengl shader resource, provhandleing a destructor
+// Wraps an opengl shader resource, providing a destructor
 pub(super) struct GLShaderResource {
     handle: GLuint,
 }
 
 impl GLShaderResource {
     pub(super) fn new(shader_type: GLenum) -> Self {
-        // check if shader_type is valhandle
-        match shader_type {
-            gl::VERTEX_SHADER => {}
-            gl::GEOMETRY_SHADER => {}
-            gl::FRAGMENT_SHADER => {}
-            _ => panic!("This shader type is not currently supported!"),
-        }
-
         // create the handle
         let handle = unsafe { gl::CreateShader(shader_type) };
 

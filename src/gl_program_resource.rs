@@ -1,7 +1,7 @@
 use gl;
 use gl::types::*;
 
-// Wraps an opengl program resource, provhandleing a destructor
+// Wraps an opengl program resource, providing a destructor
 pub(super) struct GLProgramResource {
     handle: GLuint,
 }

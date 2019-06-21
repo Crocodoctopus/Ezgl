@@ -1,17 +1,20 @@
 use gl;
 use gl::types::*;
 
-// Wraps an opengl buffer resource, provhandleing a destructor
+// Wraps an opengl buffer resource, providing a destructor
 pub(super) struct GLBufferResource {
     handle: GLuint,
 }
 
 impl GLBufferResource {
     pub(super) fn new() -> Self {
+        // create the handle
         let mut handle = 0;
         unsafe {
             gl::GenBuffers(1, &mut handle as _);
         }
+
+        // create the object
         Self { handle }
     }
 
