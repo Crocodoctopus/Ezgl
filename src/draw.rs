@@ -5,9 +5,8 @@ use super::program::*;
 use super::texture::*;
 use gl;
 use gl::types::*;
-use std::ffi::CStr;
 
-pub struct InstantDraw<'a> {
+pub struct Draw<'a> {
     // necessary
     count: u32,
     draw_type: GLenum,
@@ -23,49 +22,7 @@ pub struct InstantDraw<'a> {
     blend: Option<(GLenum, GLenum)>,
 }
 
-extern "system" fn callback(
-    source: GLenum,
-    gltype: GLenum,
-    id: GLuint,
-    severity: GLenum,
-    _length: GLsizei,
-    message: *const GLchar,
-    _: *mut GLvoid,
-) {
-    unsafe {
-        let rust_message = CStr::from_ptr(message).to_str().unwrap().to_owned();
-        println!("A GL error has been thrown!");
-        println!(
-            "  source: {:?}, type: {:?}, id: {:?}, severity: {:?}",
-            source, gltype, id, severity
-        );
-        println!("  Message: {:?}", rust_message);
-    }
-}
-
-impl<'a> InstantDraw<'a> {
-    // the dirtiest of hacks
-    pub fn bind_vao() {
-        static mut VAO: GLuint = 0;
-        unsafe {
-            gl::GenVertexArrays(1, &mut VAO);
-            gl::BindVertexArray(VAO);
-        }
-    }
-
-    pub fn clear() {
-        unsafe {
-            gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
-        }
-    }
-
-    pub fn enable_debug() {
-        unsafe {
-            gl::Enable(gl::DEBUG_OUTPUT);
-            gl::DebugMessageCallback(callback, 0 as _);
-        }
-    }
-
+impl<'a> Draw<'a> {
     pub fn start_tri_draw<T: ElementType + 'static>(
         count: u32,
         program: &'a Program,
