@@ -3,33 +3,15 @@ use gl::types::*;
 
 //////////////////////////////////////////
 // Matrix structs
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct Mat2(pub [f32; 2 * 2]);
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct Mat2x3(pub [f32; 2 * 3]);
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct Mat2x4(pub [f32; 2 * 4]);
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct Mat3x2(pub [f32; 3 * 2]);
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct Mat3(pub [f32; 3 * 3]);
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct Mat3x4(pub [f32; 3 * 4]);
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct Mat4x2(pub [f32; 4 * 2]);
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct Mat4x3(pub [f32; 4 * 3]);
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct Mat4(pub [f32; 4 * 4]);
+pub type Mat2 = [[f32; 2]; 2];
+pub type Mat2x3 = [[f32; 2]; 3];
+pub type Mat2x4 = [[f32; 2]; 4];
+pub type Mat3x2 = [[f32; 3]; 2];
+pub type Mat3 = [[f32; 3]; 3];
+pub type Mat3x4 = [[f32; 3]; 4];
+pub type Mat4x2 = [[f32; 4]; 2];
+pub type Mat4x3 = [[f32; 4]; 3];
+pub type Mat4 = [[f32; 4]; 4];
 
 //////////////////////////////////////////
 // Buffer stuff
@@ -214,185 +196,155 @@ impl ElementType for u32 {
 //////////////////////////////////////////
 // Uniform stuff
 pub trait UniformType {
-    fn into_glsl_any(self) -> GLSLAny;
-}
-
-#[derive(Debug)]
-pub enum GLSLAny {
-    None,
-    Float(f32),
-    Vec2((f32, f32)),
-    Vec3((f32, f32, f32)),
-    Vec4((f32, f32, f32, f32)),
-    Int(i32),
-    Ivec2((i32, i32)),
-    Ivec3((i32, i32, i32)),
-    Ivec4((i32, i32, i32, i32)),
-    Uint(u32),
-    Uvec2((u32, u32)),
-    Uvec3((u32, u32, u32)),
-    Uvec4((u32, u32, u32, u32)),
-    Bool(bool),
-    Bvec2((bool, bool)),
-    Bvec3((bool, bool, bool)),
-    Bvec4((bool, bool, bool, bool)),
-    Mat2(Mat2),
-    Mat2x3(Mat2x3),
-    Mat3x2(Mat3x2),
-    Mat3(Mat3),
-    Mat2x4(Mat2x4),
-    Mat4x2(Mat4x2),
-    Mat3x4(Mat3x4),
-    Mat4x3(Mat4x3),
-    Mat4(Mat4),
+    unsafe fn bind_uniform(&self, loc: GLint);
 }
 
 impl UniformType for f32 {
-    fn into_glsl_any(self) -> GLSLAny {
-        GLSLAny::Float(self)
+    unsafe fn bind_uniform(&self, loc: GLint) {
+        gl::Uniform1f(loc, *self);
     }
 }
 
 impl UniformType for (f32, f32) {
-    fn into_glsl_any(self) -> GLSLAny {
-        GLSLAny::Vec2(self)
+    unsafe fn bind_uniform(&self, loc: GLint) {
+        gl::Uniform2f(loc, self.0, self.1);
     }
 }
 
 impl UniformType for (f32, f32, f32) {
-    fn into_glsl_any(self) -> GLSLAny {
-        GLSLAny::Vec3(self)
+    unsafe fn bind_uniform(&self, loc: GLint) {
+        gl::Uniform3f(loc, self.0, self.1, self.2);
     }
 }
 
 impl UniformType for (f32, f32, f32, f32) {
-    fn into_glsl_any(self) -> GLSLAny {
-        GLSLAny::Vec4(self)
+    unsafe fn bind_uniform(&self, loc: GLint) {
+        gl::Uniform4f(loc, self.0, self.1, self.2, self.3);
     }
 }
 
 impl UniformType for i32 {
-    fn into_glsl_any(self) -> GLSLAny {
-        GLSLAny::Int(self)
+    unsafe fn bind_uniform(&self, loc: GLint) {
+        gl::Uniform1i(loc, *self)
     }
 }
 
 impl UniformType for (i32, i32) {
-    fn into_glsl_any(self) -> GLSLAny {
-        GLSLAny::Ivec2(self)
+    unsafe fn bind_uniform(&self, loc: GLint) {
+        gl::Uniform2i(loc, self.0, self.1)
     }
 }
 
 impl UniformType for (i32, i32, i32) {
-    fn into_glsl_any(self) -> GLSLAny {
-        GLSLAny::Ivec3(self)
+    unsafe fn bind_uniform(&self, loc: GLint) {
+        gl::Uniform3i(loc, self.0, self.1, self.2)
     }
 }
 
 impl UniformType for (i32, i32, i32, i32) {
-    fn into_glsl_any(self) -> GLSLAny {
-        GLSLAny::Ivec4(self)
+    unsafe fn bind_uniform(&self, loc: GLint) {
+        gl::Uniform4i(loc, self.0, self.1, self.2, self.3)
     }
 }
 
 impl UniformType for u32 {
-    fn into_glsl_any(self) -> GLSLAny {
-        GLSLAny::Uint(self)
+    unsafe fn bind_uniform(&self, loc: GLint) {
+        gl::Uniform1ui(loc, *self)
     }
 }
 
 impl UniformType for (u32, u32) {
-    fn into_glsl_any(self) -> GLSLAny {
-        GLSLAny::Uvec2(self)
+    unsafe fn bind_uniform(&self, loc: GLint) {
+        gl::Uniform2ui(loc, self.0, self.1)
     }
 }
 
 impl UniformType for (u32, u32, u32) {
-    fn into_glsl_any(self) -> GLSLAny {
-        GLSLAny::Uvec3(self)
+    unsafe fn bind_uniform(&self, loc: GLint) {
+        gl::Uniform3ui(loc, self.0, self.1, self.2)
     }
 }
 
 impl UniformType for (u32, u32, u32, u32) {
-    fn into_glsl_any(self) -> GLSLAny {
-        GLSLAny::Uvec4(self)
+    unsafe fn bind_uniform(&self, loc: GLint) {
+        gl::Uniform4ui(loc, self.0, self.1, self.2, self.3)
     }
 }
 
 impl UniformType for bool {
-    fn into_glsl_any(self) -> GLSLAny {
-        GLSLAny::Bool(self)
+    unsafe fn bind_uniform(&self, loc: GLint) {
+        gl::Uniform1ui(loc, *self as _)
     }
 }
 
 impl UniformType for (bool, bool) {
-    fn into_glsl_any(self) -> GLSLAny {
-        GLSLAny::Bvec2(self)
+    unsafe fn bind_uniform(&self, loc: GLint) {
+        gl::Uniform2ui(loc, self.0 as _, self.1 as _)
     }
 }
 
 impl UniformType for (bool, bool, bool) {
-    fn into_glsl_any(self) -> GLSLAny {
-        GLSLAny::Bvec3(self)
+    unsafe fn bind_uniform(&self, loc: GLint) {
+        gl::Uniform3ui(loc, self.0 as _, self.1 as _, self.2 as _)
     }
 }
 
 impl UniformType for (bool, bool, bool, bool) {
-    fn into_glsl_any(self) -> GLSLAny {
-        GLSLAny::Bvec4(self)
+    unsafe fn bind_uniform(&self, loc: GLint) {
+        gl::Uniform4ui(loc, self.0 as _, self.1 as _, self.2 as _, self.3 as _)
     }
 }
 
 impl UniformType for Mat2 {
-    fn into_glsl_any(self) -> GLSLAny {
-        GLSLAny::Mat2(self)
+    unsafe fn bind_uniform(&self, loc: GLint) {
+        gl::UniformMatrix2fv(loc, 1, gl::FALSE, self as *const _ as _)
     }
 }
 
 impl UniformType for Mat2x3 {
-    fn into_glsl_any(self) -> GLSLAny {
-        GLSLAny::Mat2x3(self)
+    unsafe fn bind_uniform(&self, loc: GLint) {
+        gl::UniformMatrix2x3fv(loc, 1, gl::FALSE, self as *const _ as _)
     }
 }
 
 impl UniformType for Mat2x4 {
-    fn into_glsl_any(self) -> GLSLAny {
-        GLSLAny::Mat2x4(self)
+    unsafe fn bind_uniform(&self, loc: GLint) {
+        gl::UniformMatrix2x4fv(loc, 1, gl::FALSE, self as *const _ as _)
     }
 }
 
 impl UniformType for Mat3x2 {
-    fn into_glsl_any(self) -> GLSLAny {
-        GLSLAny::Mat3x2(self)
+    unsafe fn bind_uniform(&self, loc: GLint) {
+        gl::UniformMatrix3x2fv(loc, 1, gl::FALSE, self as *const _ as _)
     }
 }
 
 impl UniformType for Mat3 {
-    fn into_glsl_any(self) -> GLSLAny {
-        GLSLAny::Mat3(self)
+    unsafe fn bind_uniform(&self, loc: GLint) {
+        gl::UniformMatrix3fv(loc, 1, gl::FALSE, self as *const _ as _)
     }
 }
 
 impl UniformType for Mat3x4 {
-    fn into_glsl_any(self) -> GLSLAny {
-        GLSLAny::Mat3x4(self)
+    unsafe fn bind_uniform(&self, loc: GLint) {
+        gl::UniformMatrix3x4fv(loc, 1, gl::FALSE, self as *const _ as _)
     }
 }
 
 impl UniformType for Mat4x2 {
-    fn into_glsl_any(self) -> GLSLAny {
-        GLSLAny::Mat4x2(self)
+    unsafe fn bind_uniform(&self, loc: GLint) {
+        gl::UniformMatrix4x2fv(loc, 1, gl::FALSE, self as *const _ as _)
     }
 }
 
 impl UniformType for Mat4x3 {
-    fn into_glsl_any(self) -> GLSLAny {
-        GLSLAny::Mat4x3(self)
+    unsafe fn bind_uniform(&self, loc: GLint) {
+        gl::UniformMatrix4x3fv(loc, 1, gl::FALSE, self as *const _ as _)
     }
 }
 
 impl UniformType for Mat4 {
-    fn into_glsl_any(self) -> GLSLAny {
-        GLSLAny::Mat4(self)
+    unsafe fn bind_uniform(&self, loc: GLint) {
+        gl::UniformMatrix4fv(loc, 1, gl::FALSE, self as *const _ as _)
     }
 }
