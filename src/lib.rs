@@ -3,10 +3,10 @@ extern crate png;
 
 pub mod buffer;
 pub mod draw;
-pub mod gl_buffer_resource;
-pub mod gl_program_resource;
-pub mod gl_shader_resource;
-pub mod gl_texture_resource;
+mod gl_buffer_resource;
+mod gl_program_resource;
+mod gl_shader_resource;
+mod gl_texture_resource;
 pub mod glsl_types;
 pub mod program;
 pub mod shader;

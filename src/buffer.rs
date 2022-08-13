@@ -65,6 +65,23 @@ impl<T> Buffer<T> {
         Ok(())
     }
 
+    pub fn init_null(&mut self, buffer_type: GLenum, len: usize) -> Result<(), BufferError> {
+        // upload the data
+        unsafe {
+            gl::BindBuffer(buffer_type, self.resource.get_raw());
+            gl::BufferData(
+                buffer_type,
+                (len * std::mem::size_of::<T>()) as _,
+                0 as _,
+                gl::STATIC_DRAW,
+            );
+        }
+
+        self.buffer_type = buffer_type;
+
+        Ok(())
+    }
+
     pub fn splice(&mut self, pos: usize, data: &[T]) -> Result<(), BufferError>
     where
         T: Copy,

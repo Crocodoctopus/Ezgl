@@ -2,13 +2,14 @@ use gl;
 use gl::types::*;
 
 /// Wraps an opengl texture resource, providing a destructor
-pub(super) struct GLTextureResource {
+#[derive(Debug)]
+pub struct GLTextureResource {
     handle: GLuint,
 }
 
 impl GLTextureResource {
     // Constructs a new handle
-    pub(super) fn new() -> Self {
+    pub fn new() -> Self {
         // create the handle
         let mut handle = 0;
         unsafe {
@@ -19,7 +20,7 @@ impl GLTextureResource {
         Self { handle }
     }
 
-    pub(super) unsafe fn get_raw(&self) -> GLuint {
+    pub unsafe fn get_raw(&self) -> GLuint {
         self.handle
     }
 }

@@ -16,7 +16,7 @@ pub struct Draw<'a> {
     // optional
     buffers: Vec<(&'a GLBufferResource, GLenum, GLint, GLenum, GLuint)>, // resource handle, buffer type, type count, type type, attribute #
     textures: Vec<(&'a Texture2D, GLint)>,
-    uniforms: Vec<(&'a UniformType, GLint)>,
+    uniforms: Vec<(&'a dyn UniformType, GLint)>,
 
     depth: Option<GLenum>,
     blend: Option<(GLenum, GLenum)>,
@@ -63,7 +63,7 @@ impl<'a> Draw<'a> {
         self
     }
 
-    pub fn with_uniform(mut self, t: &'a UniformType, loc: GLint) -> Self {
+    pub fn with_uniform(mut self, t: &'a dyn UniformType, loc: GLint) -> Self {
         self.uniforms.push((t, loc));
         self
     }
