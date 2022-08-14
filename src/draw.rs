@@ -6,6 +6,42 @@ use super::texture::*;
 use gl;
 use gl::types::*;
 
+pub trait IntoAttribLocation {
+    fn into(self, program: &Program) -> GLint;
+}
+
+impl IntoAttribLocation for usize {
+    fn into(self, program: &Program) -> GLint {
+        self as _
+    }
+}
+
+impl IntoAttribLocation for &str {
+    fn into(self, program: &Program) -> GLint {
+        unsafe {
+            gl::GetAttribLocation(program.resource.get_raw(), format!("{}\0", self).as_ptr() as *const _)
+        }
+    }
+}
+
+pub trait IntoUniformLocation {
+    fn into(self, program: &Program) -> GLint;
+}
+
+impl IntoUniformLocation for usize {
+    fn into(self, program: &Program) -> GLint {
+        self as _
+    }
+}
+
+impl IntoUniformLocation for &str {
+    fn into(self, program: &Program) -> GLint {
+        unsafe {
+            gl::GetUniformLocation(program.resource.get_raw(), format!("{}\0", self).as_ptr() as *const _)
+        }
+    }
+}
+
 pub struct Draw<'a> {
     // necessary
     count: u32,
@@ -46,25 +82,25 @@ impl<'a> Draw<'a> {
     pub fn with_buffer<T: BufferType + 'static>(
         mut self,
         buffer: &'a Buffer<T>,
-        loc: GLuint,
+        loc: impl IntoAttribLocation,
     ) -> Self {
         self.buffers.push((
             &buffer.resource,
             buffer.buffer_type,
             T::get_type().0,
             T::get_type().1,
-            loc,
+            loc.into(&self.program) as _,
         ));
         self
     }
 
-    pub fn with_texture(mut self, texture: &'a Texture2D, loc: GLint) -> Self {
-        self.textures.push((texture, loc));
+    pub fn with_texture(mut self, texture: &'a Texture2D, loc: impl IntoUniformLocation) -> Self {
+        self.textures.push((texture, loc.into(&self.program)));
         self
     }
 
-    pub fn with_uniform(mut self, t: &'a dyn UniformType, loc: GLint) -> Self {
-        self.uniforms.push((t, loc));
+    pub fn with_uniform(mut self, t: &'a dyn UniformType, loc: impl IntoUniformLocation) -> Self {
+        self.uniforms.push((t, loc.into(&self.program)));
         self
     }
 
